@@ -1,8 +1,6 @@
 import random
 import math
-import pygame
 import sys
-import os
 import logging
 import ctypes
 import time
@@ -10,7 +8,6 @@ import time
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
 
-from Scripts.Entities import PhysicsEntity, Entity
 from Scripts.Enemy import Enemy
 from Scripts.Player import Player
 from Scripts.Utils import *
@@ -18,8 +15,8 @@ from Scripts.Tilemap import Tilemap
 from Scripts.Clouds import Clouds
 from Scripts.particle import Particle
 from Scripts.Spark import Spark
-from Scripts.Menu import Menu, handle_state
-from Scripts.UI import UI, Button, Dialogue
+from Scripts.Menu import handle_state
+from Scripts.UI import UI, Button
 
 
 

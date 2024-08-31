@@ -1,5 +1,4 @@
 import random
-import pygame
 
 class Cloud:
     def __init__(self, pos, img, speed, depth):

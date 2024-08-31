@@ -1,5 +1,4 @@
 import pygame
-import os
 from Scripts.Utils import load_image
 
 BASE_IMG_PATH = "data/images/"

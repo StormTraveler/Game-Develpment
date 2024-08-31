@@ -1,4 +1,3 @@
-from Scripts.Utils import load_image, load_images, Animation, load_image_transparent, load_images_traparent, load_keys
 import pygame
 
 class UI:
