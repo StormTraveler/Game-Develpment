@@ -12,34 +12,22 @@ add it to
 - enemy movement
 - projectile movement
 - particles
-
+- dash deceleration and acceleration
 
 
 
 TODO PERFORMANCE:
-Use Pygame's Dirty Rectangles System: Pygame has a system called "dirty rectangles" that allows you to update only the parts of the screen that have changed since the last frame, rather than redrawing the entire screen every frame. This can significantly improve rendering performance.
-
-
-
-
-
-
-
-
-
-
 
 
 
 TODO NEXT:
 inventory system
 money system
+level select
 save / load
-
-TODO PERFORMANCE:
-
-
 Remake the Main Menu
+more enemies
+more weapons
 settings icon in the top right of the screen
 
 TODO IMPLEMENT:
