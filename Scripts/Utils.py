@@ -11,13 +11,13 @@ BASE_IMG_PATH = "data/images/"
 
 
 def load_image(path):
-    img = pygame.image.load(BASE_IMG_PATH + path + ".png").convert()
+    img = (pygame.image.load(BASE_IMG_PATH + path + ".png").convert())
     img.set_colorkey((0, 0, 0))
     return img
 
 
 def load_image_transparent(path, scale=(64, 32)):
-    img = pygame.image.load(BASE_IMG_PATH + path + ".png")
+    img = (pygame.image.load(BASE_IMG_PATH + path + ".png").convert())
     img.set_colorkey((255, 255, 255))
     img = pygame.transform.scale(img, scale)
     return img

@@ -99,6 +99,6 @@ class Menu:
         self.game.events()
         self.game.clock.tick(60)
 
-        pygame.display.update()
+        pygame.display.flip()
 
 

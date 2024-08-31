@@ -4,7 +4,11 @@ import sys
 import logging
 import ctypes
 import time
-import cProfile
+import sys
+from array import array
+
+import pygame
+import moderngl
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -388,7 +392,8 @@ class Game:
             current_time = time.time()
             self.dt = current_time - last_frame_time
             last_frame_time = current_time
-            print(self.dt)
+
+
             self.clock.tick(self.framerate)
             self.events()
             self.handle_UI()
@@ -396,7 +401,7 @@ class Game:
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
 
-            pygame.display.update()
+            pygame.display.flip()
 
         #   Handle Menu States
         for state in self.menu_states:
@@ -431,7 +436,6 @@ class Game:
 
                     # self.clouds.update()
                     # self.clouds.render(self.outline, offset=self.render_scroll)
-                    print(self.render_scroll)
                     self.tilemap.render(self.display, offset=self.render_scroll)
 
 
@@ -456,7 +460,7 @@ class Game:
                     for button in self.buttons:
                         button.render(self.full_display)
 
-                    pygame.display.update()
+                    pygame.display.flip()
 
     def events(self):
         for event in pygame.event.get():
