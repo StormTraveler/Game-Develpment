@@ -1,3 +1,5 @@
+import pygame
+
 class Particle:
     def __init__(self, game, p_type, pos, velocity=(0, 0), frame=0):
         self.game = game
@@ -6,6 +8,7 @@ class Particle:
         self.velocity = list(velocity)
         self.animation = self.game.assets['particle/' + self.type].copy()
         self.animation.frame = frame
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], self.animation.img().get_width(), self.animation.img().get_height())
 
     def update(self):
         kill = False

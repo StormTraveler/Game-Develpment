@@ -237,7 +237,9 @@ class Game:
         else:
             if self.debugging:
                 self.player.draw_hitbox()
-            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
+            # Multiply the player's speed by self.dt
+            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0),
+                               speed=self.player.speed * self.dt + 120 // self.framerate)
             self.player.render(self.display, offset=self.render_scroll)
 
     def handle_UI(self):
@@ -252,8 +254,10 @@ class Game:
 
     def run(self):
 
+
         self.handle_music()
-        # self.dt = time.time() - self.start
+        self.dt = time.time() - self.start
+        last_frame_time = time.time()
 
         if self.state == "Game":
             self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64]))
@@ -262,8 +266,6 @@ class Game:
             #                               f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
             #                               text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
 
-            # Screen is 480x270
-            pass
 
         while self.state == 'Game':
             self.display.fill([0, 0, 0, 0])  # Clear the display
@@ -271,7 +273,7 @@ class Game:
             self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
             self.screenshake = max(0, self.screenshake - 1)
 
-            if not len(self.enemies):  # If no enemies are left next level
+            if not len(self.enemies):  # If no enemies are left go to next level
                 self.transition += 1
                 if self.transition > 30:
                     self.level += 1
@@ -294,13 +296,13 @@ class Game:
                     self.particles.append(
                         Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-            self.clouds.update()
-            self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
+            # self.clouds.update()
+            # self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
             self.tilemap.render(self.display, offset=self.render_scroll)
 
             # Handle Enemies
             for enemy in self.enemies:
-                enemy.update(self.tilemap, (0, 0))
+                enemy.update(self.tilemap, (0, 0), offset=self.render_scroll)
                 if self.debugging:
                     enemy.draw_hitbox()
                 enemy.render(self.display, offset=self.render_scroll)
@@ -382,7 +384,12 @@ class Game:
                 self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
 
             #   Handle Basic Clockrate and Displays
-            self.clock.tick(60)
+
+            current_time = time.time()
+            self.dt = current_time - last_frame_time
+            last_frame_time = current_time
+            print(self.dt)
+            self.clock.tick(self.framerate)
             self.events()
             self.handle_UI()
             self.outline.blit(self.display, (0, 0))
@@ -424,7 +431,9 @@ class Game:
 
                     # self.clouds.update()
                     # self.clouds.render(self.outline, offset=self.render_scroll)
+                    print(self.render_scroll)
                     self.tilemap.render(self.display, offset=self.render_scroll)
+
 
                     self.movement[1] = True
                     self.handle_player()

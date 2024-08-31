@@ -5,6 +5,8 @@ class Spark:
         self.pos = list(pos)
         self.angle = angle
         self.speed = speed
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], 1, 1)  # Assuming the size of the spark is 1x1
+
 
     def update(self):
         self.pos[0] += math.cos(self.angle) * self.speed

@@ -13,6 +13,8 @@ class UI:
         self.type = type
         self.text_color = text_color
         self.font = pygame.font.SysFont(font[0], font[1])
+        self.rect = pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
+
         if self.img != None:
             self.img = pygame.transform.scale(self.img, (self.size[0], self.size[1]))
 

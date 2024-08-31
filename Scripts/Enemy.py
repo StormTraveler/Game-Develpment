@@ -15,11 +15,21 @@ class Enemy(PhysicsEntity):
     # Define the Enemy Inheriting From Physics Entity
     def __init__(self, game, pos, size, speed=1, leeway=(0, 0)):
         super().__init__(game, "enemy", pos, size, speed, leeway)
+        self.offcount = 0
+        self.offmovecount = 0
 
         self.walking = 0
 
     # Main Enemy Update Function (Overriden)
-    def update(self, tilemap, movement=(0, 0)):
+    def update(self, tilemap, movement=(0, 0), offset=(0, 0)):
+
+        #############################Skip movement for offscreen enemies #############################
+        # visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+        # if not visible_area.colliderect(self.rect()):
+        #     self.offmovecount += 1
+        #     if self.offmovecount % 60 == 0:
+        #         logging.debug("Enemy at x:" + str(self.rect().x) + " y:" + str(self.rect().y) + " is offscreen not doing movement")
+        #     return
 
         if self.walking:
             if tilemap.solid_check((self.rect().centerx + (-7 if self.flip else 7), self.rect().centery + 23)):
@@ -82,12 +92,21 @@ class Enemy(PhysicsEntity):
     # Main Enemy Render Function (Overriden)
     # Includes Gun Handling
     def render(self, surf, offset=(0, 0)):
-        super().render(surf, offset=offset)
 
-        # Attach the Gun to the Enemy
-        if self.flip:
-            surf.blit(pygame.transform.flip(self.game.assets['gun'], True, False),
-                      (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0],
-                       self.rect().centery - offset[1]))
+        visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+        if visible_area.colliderect(self.rect()):
+            super().render(surf, offset=offset)
+
+            # Attach the Gun to the Enemy
+            if self.flip:
+                surf.blit(pygame.transform.flip(self.game.assets['gun'], True, False),
+                          (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0],
+                           self.rect().centery - offset[1]))
+            else:
+                surf.blit(self.game.assets['gun'], (self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
         else:
-            surf.blit(self.game.assets['gun'], (self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
+            pass
+            # If the Enemy is not in the visible area, do not render it
+            self.offcount += 1
+            if self.offcount % 60 == 0:
+                logging.debug("Enemy at x:" + str(self.rect().x) + " y:" + str(self.rect().y) + " is offscreen")

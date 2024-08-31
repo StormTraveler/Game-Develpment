@@ -40,9 +40,10 @@ class Player(PhysicsEntity):
             pygame.draw.circle(self.game.display, (255, 0, 0), (self.pos[0] - self.game.scroll[0] + self.rect().width // 2, self.pos[1] - self.game.scroll[1] + self.rect().height // 2), 10, 1)
 
     # Main Player Update Function (Overriden)
-    def update(self, tilemap, movement=(0, 0)):
+    def update(self, tilemap, movement=(0, 0), speed=1):
         super().update(tilemap, movement=movement)
 
+        self.speed = speed
         self.air_time += 1
         self.wall_slide = False
 
