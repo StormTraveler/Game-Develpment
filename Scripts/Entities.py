@@ -155,22 +155,9 @@ class Entity():
         if self.type == "slash":
             for enemy in self.game.enemies:
                 if self.rect().colliderect(enemy.rect()) and self.dead == False:
-                    self.game.sfx['hit'].play()
-                    self.game.enemies.remove(enemy)
-                    self.game.screenshake = max(16, self.game.screenshake)
-                    logging.debug("Enemy at x:" + str(enemy.rect().x) + " y:" + str(enemy.rect().y) + " died")
-                    self.dead = True
+                    enemy.die()
 
-                    for i in range(30):
-                        angle = random.random() * math.pi * 2
-                        speed = random.random() * 5
-                        self.game.sparks.append(Spark(enemy.rect().center, angle, 2 + random.random()))
-                        self.game.particles.append(
-                            Particle(self.game, 'particle', enemy.rect().center,
-                                     velocity=[math.cos(angle + math.pi) * speed * 0.5,
-                                               math.sin(angle + math.pi) * speed * 0.5],
-                                     frame=random.randint(0, 7)))
-                    self.game.sparks.append(Spark(enemy.rect().center, 0, 5 + random.random()))
+
 
 
     def render(self, surf, pos, offset=(0, 0)):

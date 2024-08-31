@@ -28,6 +28,7 @@ class Player(PhysicsEntity):
         self.inventory = [0, 1, 2, 3, 4, 5, 6, 7,
                           8, 9, 10, 11, 12, 13, 14, 15]
         self.jump_cooldown = 0
+        self.coins = 0
 
     def draw_hitbox(self):
         if self.dashing[0] == 0 and self.dashing[1] == 0:
@@ -234,6 +235,7 @@ class Player(PhysicsEntity):
         if not self.attacking:
             self.attacking = 25
             self.slashes.append(Entity(self.game, "slash", self.rect().center, size=(8, 16), leeway=(0, 0)))
+
 
 
     # Simple Heatlh/Damage Function

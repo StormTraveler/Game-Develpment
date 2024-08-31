@@ -146,6 +146,7 @@ class Game:
             "MenuBackground": load_image("MenuBackground"),
 
             "health": load_image("UI/player_health_pip"),
+            "coin": load_image("UI/coin"),
             "MenuButton": load_image_transparent("UI/MenuButton", (200, 50)),
             "MenuButtonSelected": load_image_transparent("UI/MenuButtonSelected", (200, 50)),
             "DialogueBox": load_image_transparent("UI/DialogueBox", (200, 50)),
@@ -248,7 +249,7 @@ class Game:
 
     def handle_UI(self):
         for ui in self.UIs:
-            ui.update(self.full_display, leng=[self.player.health, 1])
+            ui.update(self.full_display)
             ui.render(self.full_display)
 
     def handle_dialogues(self):
@@ -265,6 +266,8 @@ class Game:
 
         if self.state == "Game":
             self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64]))
+            self.UIs.append(UI(self, pos=[0, 64], img=self.assets["coin"], size=[64, 64], leng=(1, 1)))
+
             # self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to the game I still have not named. "
             #                                                           f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. To dash press {self.key('Dash')} or {self.key('Dash', 1)}. "
             #                               f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
@@ -348,6 +351,21 @@ class Game:
                     else:
                         self.projectiles.remove(projectile)
                         logging.info("projectile removed")
+                for slash in self.player.slashes:
+                    if not projectile[3] and slash.rect().colliderect(pygame.Rect(projectile[0][0] - 4, projectile[0][1] - 4, 8, 8)):
+                        projectile[1] = projectile[1][0] * -1, projectile[1][1]
+                        projectile[3] = True
+                        print(projectile)
+
+                if projectile[3]:   #   Reflected by player so it can kill enemies
+                    for enemy in self.enemies:
+                        if enemy.rect().colliderect(pygame.Rect(projectile[0][0] - 4, projectile[0][1] - 4, 8, 8)):
+                            enemy.die()
+                            self.projectiles.remove(projectile)
+                            for i in range(4):
+                                self.sparks.append(
+                                    Spark(projectile[0], random.random() - 0.5 + math.pi, random.random() + 2))
+
 
             for spark in self.sparks:
                 kill = spark.update()
@@ -387,6 +405,8 @@ class Game:
                 fps_text = pygame.font.Font(None, 30).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
                 self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
 
+            money_text = pygame.font.Font(None, 30).render(f"{self.player.coins}", True, (205, 220, 25))
+            self.display.blit(money_text, (16, 16))
             #   Handle Basic Clockrate and Displays
 
             current_time = time.time()
