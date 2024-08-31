@@ -1,0 +1,34 @@
+############################################
+##############Enemies#######################
+############################################
+
+
+TODO LUMBERJACK:
+- if no trees, go to nearest tree
+- inhabits the forest
+
+TODO GOBLIN:
+- if no enemies, go to nearest enemy
+- inhabits the caves
+
+TODO KNIGHT:
+- if no entities, sharpen sword
+- inhabits the castle
+
+TODO ARCHER:
+- if no entities, shoot target
+- inhabits the castle/jungle
+
+TODO WIZARD:
+- if no entities, cast firework spell
+- inhabits the castle
+
+TODO VIKING:
+- if friendlies around, cheer and drink mead
+- inhabits the snow
+
+
+############################################
+##############Entities######################
+############################################
+

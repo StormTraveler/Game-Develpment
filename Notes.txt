@@ -1,0 +1,104 @@
+py -m PyInstaller Game.py --noconsole
+auto-py-to-exe
+
+
+
+
+TODO:
+FIX TIME SCALE
+SLOWING DOWN GAME
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+TODO NEXT:
+inventory system
+money system
+save / load
+
+TODO PERFORMANCE:
+
+
+Remake the Main Menu
+settings icon in the top right of the screen
+
+TODO IMPLEMENT:
+
+TODO BIG FEATURES:
+inventory system
+money system
+save / load
+
+
+
+
+
+TODO POLISH:
+Remake the Main Menu
+Move the grass from side to side when walking
+reset player dash and movement and velocity when loading level
+Make buttons slide down onto screen for pause screen
+Make buttons slide down onto screen for main menu
+Make buttons slide down onto screen for options menu
+Make buttons slide down onto screen for resolution menu
+Make buttons slide down onto screen for keybind menu
+Fix Resolutions
+resolution menu
+keybind menu
+collectibles
+
+
+
+
+
+TODO ENEMIES:
+Enemy that shoots projectile at range
+Enemy that has melee attack
+
+TODO FIX:
+dashing too far/dashing into projectiles
+prevent missed input for jumping on wall dash
+prevent missed input for jumping on wall regular jump
+
+
+TODO DONE:
+Fixed RECREATING MENU EACH FRAME
+Health System
+Attack System
+key binds
+don't jump right after starting game
+iFrames for dashing
+vertical dash
+Move everything to Scripts folder
+iFrames more accurate
+main menu
+pause menu
+small dash sideways when not moving
+Options Menu
+swap X and C
+Split up Enemies into their own file
+
+Sandy Desert
+Snowy Mountains
+Grassy Plains
+Cave
+Rain Forest
+Volcanic Wasteland?
+
+
+
+TODO SCRAPPED:
+Climb walls
+Omnidirectional dash
+downwards dash
+C interact Key

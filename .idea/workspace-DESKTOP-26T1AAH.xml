@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="bec37be0-4282-401e-9717-025f3eba4029" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/Scripts/Button.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Scripts/Entities.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Scripts/Game.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Scripts/Level_Editor.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Scripts/Player.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="2YAa6i9FpzROLEKtjmZc0gSZOZi" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.Game.executor": "Run",
+    "Python.Level_Editor.executor": "Run",
+    "Python.Player.executor": "Run",
+    "Python.SpriteSheetTest.executor": "Run",
+    "Python.Utils.executor": "Run",
+    "Python.keybind test.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/danie/OneDrive/Code/GameDev",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors.General",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="QodanaReportsService">
+    <option name="descriptions">
+      <ReportDescription localRun="true" path="C:\Users\danie\AppData\Local\Temp\qodana_output\qodana.sarif.json" reportGuid="3fcb484a-ab6d-4c01-815f-d59738cb0e89" reportId="GameDev/qodana/2024-01-08" />
+    </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\PyCharm 2023.3.2\PythonProjects\GameDev\data\maps" />
+      <recent name="C:\Users\danie\PycharmProjects\GameDev" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\PyCharm 2023.3.2\PythonProjects\GameDev\data" />
+      <recent name="C:\Users\danie\PycharmProjects\GameDev" />
+      <recent name="C:\Users\danie\PycharmProjects\GameDev\Scripts" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration name="Game" type="PythonConfigurationType" factoryName="Python">
+      <module name="GameDev" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.13 (GameDev)" />
+      <option name="WORKING_DIRECTORY" value="C:\Users\danie\OneDrive\Code\GameDev" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Game.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Game" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="GameDev" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="C:\Users\danie\PycharmProjects\GameDev\Scripts\Game.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-50da183f06c8-2887949eec09-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-233.13135.95" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="bec37be0-4282-401e-9717-025f3eba4029" name="Changes" comment="" />
+      <created>1699970664328</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1699970664328</updated>
+      <workItem from="1699970670928" duration="27920000" />
+      <workItem from="1700103421702" duration="177000" />
+      <workItem from="1700162135608" duration="771000" />
+      <workItem from="1700192824015" duration="5211000" />
+      <workItem from="1700233220873" duration="594000" />
+      <workItem from="1700249585126" duration="22091000" />
+      <workItem from="1700827092453" duration="4541000" />
+      <workItem from="1700831878403" duration="9946000" />
+      <workItem from="1700955203426" duration="18471000" />
+      <workItem from="1701018566351" duration="23323000" />
+      <workItem from="1701662402002" duration="885000" />
+      <workItem from="1701711800266" duration="3190000" />
+      <workItem from="1701721788255" duration="613000" />
+      <workItem from="1701731200492" duration="85000" />
+      <workItem from="1701802694260" duration="198000" />
+      <workItem from="1701802922928" duration="26000" />
+      <workItem from="1701802960029" duration="2483000" />
+      <workItem from="1703044486411" duration="1480000" />
+      <workItem from="1703608360087" duration="133000" />
+      <workItem from="1703608514052" duration="5066000" />
+      <workItem from="1703638573790" duration="1905000" />
+      <workItem from="1703645294210" duration="7572000" />
+      <workItem from="1703695546466" duration="15928000" />
+      <workItem from="1703781496800" duration="8903000" />
+      <workItem from="1703967075138" duration="10331000" />
+      <workItem from="1704162920752" duration="2239000" />
+      <workItem from="1704173456645" duration="21000" />
+      <workItem from="1704307860724" duration="1407000" />
+      <workItem from="1704736611061" duration="5121000" />
+      <workItem from="1705519538274" duration="15000" />
+      <workItem from="1705530753359" duration="1061000" />
+      <workItem from="1705588489309" duration="1541000" />
+      <workItem from="1706633321998" duration="305000" />
+      <workItem from="1707016231389" duration="302000" />
+      <workItem from="1707766387033" duration="13536000" />
+      <workItem from="1707937840431" duration="606000" />
+      <workItem from="1707947365020" duration="3684000" />
+      <workItem from="1707970850962" duration="2321000" />
+      <workItem from="1708007975404" duration="1199000" />
+      <workItem from="1708012331672" duration="4608000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/GameDev$Game__1_.coverage" NAME="Game (1) Coverage Results" MODIFIED="1699995016182" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GameDev$Game.coverage" NAME="Game Coverage Results" MODIFIED="1708016909960" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="C:\Users\danie\OneDrive\Code\GameDev" />
+    <SUITE FILE_PATH="coverage/GameDev$Tilemap.coverage" NAME="Tilemap Coverage Results" MODIFIED="1700958532818" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Scripts" />
+    <SUITE FILE_PATH="coverage/GameDev$Level_Editor.coverage" NAME="Level_Editor Coverage Results" MODIFIED="1707784217132" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GameDev$keybind_test.coverage" NAME="keybind test Coverage Results" MODIFIED="1707949740093" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/GameDev$Player.coverage" NAME="Player Coverage Results" MODIFIED="1703717306460" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Scripts" />
+    <SUITE FILE_PATH="coverage/GameDev$Utils.coverage" NAME="Utils Coverage Results" MODIFIED="1703648543735" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Scripts" />
+    <SUITE FILE_PATH="coverage/GameDev$SpriteSheetTest.coverage" NAME="SpriteSheetTest Coverage Results" MODIFIED="1703647981087" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Scripts" />
+  </component>
+</project>
