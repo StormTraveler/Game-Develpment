@@ -19,8 +19,6 @@ from Scripts.Spark import Spark
 from Scripts.Menu import handle_state
 from Scripts.UI import UI, Button
 
-
-
 # os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0" Makes it open in the top left
 logging.basicConfig(level=logging.INFO)
 
@@ -72,7 +70,6 @@ class Game:
         self.framerate = 60
         self.start = time.time()
 
-
         if self.ADMIN:
             self.collectables = {
                 "Dash": True,
@@ -82,7 +79,7 @@ class Game:
                 "Wall Jump": True,
                 "Health": True,
             }
-            #self.music = False
+            # self.music = False
         else:
             self.collectables = {
                 "Dash": False,
@@ -211,7 +208,6 @@ class Game:
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 20
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 20
 
-
         self.particles = []
         self.projectiles = []
         self.sparks = []
@@ -223,9 +219,9 @@ class Game:
         self.player.jump_cooldown = 30
         self.dialogues = []
 
-
     def key(self, key, x=0):
         return pygame.key.name(self.keybinds[key][x])
+
     def handle_music(self):
         if self.music:
             self.sfx['ambience'].play(-1)
@@ -248,19 +244,20 @@ class Game:
         for ui in self.UIs:
             ui.update(self.full_display, leng=[self.player.health, 1])
             ui.render(self.full_display)
+
+    def handle_dialogues(self):
         for d in self.dialogues:
             d.update(self.full_display)
             d.render(self.full_display)
 
-
     def run(self):
 
         self.handle_music()
-        #self.dt = time.time() - self.start
+        # self.dt = time.time() - self.start
 
         if self.state == "Game":
             self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64]))
-            #self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to the game I still have not named. "
+            # self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to the game I still have not named. "
             #                                                           f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. To dash press {self.key('Dash')} or {self.key('Dash', 1)}. "
             #                               f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
             #                               text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
@@ -279,7 +276,6 @@ class Game:
                 if self.transition > 30:
                     self.level += 1
                     self.load_level(self.level)
-
 
             if self.transition < 0:
                 self.transition += 1
@@ -308,8 +304,6 @@ class Game:
                 if self.debugging:
                     enemy.draw_hitbox()
                 enemy.render(self.display, offset=self.render_scroll)
-
-
 
             # (x, y), direction, timer
             for projectile in self.projectiles:
@@ -355,9 +349,7 @@ class Game:
                 if kill:
                     self.sparks.remove(spark)
 
-
             self.handle_player()
-
 
             display_mask = pygame.mask.from_surface(self.display)
             display_sillouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
@@ -389,20 +381,13 @@ class Game:
                 fps_text = pygame.font.Font(None, 30).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
                 self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
 
-
-
-
-
             #   Handle Basic Clockrate and Displays
             self.clock.tick(60)
             self.events()
+            self.handle_UI()
             self.outline.blit(self.display, (0, 0))
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
-
-
-
-
 
             pygame.display.update()
 
@@ -412,7 +397,8 @@ class Game:
                 self.buttons = []
                 self.load_level(0)
                 self.buttons.append(Button(self, (100, 100, 200, 50), text="Start", type="start", imgs="MenuButton"))
-                self.buttons.append(Button(self, (100, 200, 200, 50), text="Options", type="options", imgs="MenuButton"))
+                self.buttons.append(
+                    Button(self, (100, 200, 200, 50), text="Options", type="options", imgs="MenuButton"))
                 self.buttons.append(Button(self, (100, 300, 200, 50), text="Quit", type="quit", imgs="MenuButton"))
                 print("Menu Loaded")
 
@@ -420,7 +406,7 @@ class Game:
                 if self.state != "Main Menu":
                     handle_state(self, state)
 
-                else:   # Handle Menu Animation
+                else:  # Handle Menu Animation
                     self.display.fill((0, 0, 0, 0))  # Clear the display
 
                     self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
@@ -436,8 +422,8 @@ class Game:
                             self.particles.append(
                                 Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-                    #self.clouds.update()
-                    #self.clouds.render(self.outline, offset=self.render_scroll)
+                    # self.clouds.update()
+                    # self.clouds.render(self.outline, offset=self.render_scroll)
                     self.tilemap.render(self.display, offset=self.render_scroll)
 
                     self.movement[1] = True
@@ -450,9 +436,6 @@ class Game:
                     display_sillouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
                     for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # outline
                         self.outline.blit(display_sillouette, offset)
-
-
-
 
                     #   Handle Basic Clockrate and Displays
                     self.clock.tick(self.framerate)
@@ -565,7 +548,7 @@ class Game:
                         self.state = 'Game'
                         return True
                     if event.key == pygame.K_SLASH:
-                       print(self.button_selected)
+                        print(self.button_selected)
                     if event.key == pygame.K_UP:
                         self.button_selected -= 1
                         if self.button_selected < 0:
@@ -590,8 +573,6 @@ class Game:
                         if self.state == "Quit":
                             pygame.quit()
                             sys.exit()
-
-
 
 
 if __name__ == "__main__":
