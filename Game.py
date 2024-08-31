@@ -4,6 +4,7 @@ import sys
 import logging
 import ctypes
 import time
+import cProfile
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -298,7 +299,7 @@ class Game:
                         Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
             self.clouds.update()
-            self.clouds.render(self.outline, offset=self.render_scroll, mod=False)
+            self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
             self.tilemap.render(self.display, offset=self.render_scroll)
 
             # Handle Enemies
@@ -435,8 +436,8 @@ class Game:
                             self.particles.append(
                                 Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-                    self.clouds.update()
-                    self.clouds.render(self.outline, offset=self.render_scroll)
+                    #self.clouds.update()
+                    #self.clouds.render(self.outline, offset=self.render_scroll)
                     self.tilemap.render(self.display, offset=self.render_scroll)
 
                     self.movement[1] = True
@@ -578,10 +579,10 @@ class Game:
                         if self.state == "Keybinds":
                             pass
                         elif self.state == "Resolution":
-                            self.screen_size = self.resolutions[self.button_selected]
-                            self.screen = pygame.display.set_mode(self.screen_size, pygame.RESIZABLE)
-                            self.state = "Options"
-                            self.button_selected = 0
+                            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size),
+                                             self.screenshake_offset)
+                            self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
+
                         else:
                             self.state = self.buttons[self.button_selected].action(self)
                             self.button_selected = 0
@@ -589,6 +590,8 @@ class Game:
                         if self.state == "Quit":
                             pygame.quit()
                             sys.exit()
+
+
 
 
 if __name__ == "__main__":
