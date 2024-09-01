@@ -53,7 +53,8 @@ class Menu:
         if self.type == "Resolution":
             buttons_per_screen = self.game.screen_size[1] - 100
             max_buttons = buttons_per_screen // 100
-            x, iteration = 100, 0
+            x = 100
+            iteration = 0
 
             for resolution in self.game.resolutions:
                 self.buttons.append(
@@ -61,6 +62,9 @@ class Menu:
                            type="resolution"))
                 x += 250 if (iteration + 1) % max_buttons == 0 else 0
                 iteration = (iteration + 1) % max_buttons
+
+            self.buttons.append(Button(self.game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), "Back", type="back"))
+
 
 
     def get_buttons(self):

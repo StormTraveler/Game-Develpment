@@ -39,7 +39,7 @@ class Game:
         self.sparks = []
         self.render_scroll = None
         pygame.init()
-        self.screen_size = [1920, 1080]
+        #self.screen_size = [1920, 1080]
         self.resolutions = [(640, 360), (854, 480), (960, 540), (1024, 576), (1280, 720), (1366, 768), (1600, 900),
                             (1920, 1080)]
         self.zoom_size = [480, 270]  # 16:9 aspect ratio 480:270
@@ -249,7 +249,12 @@ class Game:
 
     def handle_UI(self):
         for ui in self.UIs:
-            ui.update(self.full_display)
+            if ui.img == self.assets["health"]:
+                ui.update(self.full_display, leng=[self.player.health, 1])
+                print("hey")
+            else:
+                ui.update(self.full_display)
+
             ui.render(self.full_display)
 
     def handle_dialogues(self):
@@ -595,9 +600,10 @@ class Game:
                         if self.state == "Keybinds":
                             pass
                         elif self.state == "Resolution":
-                            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size),
-                                             self.screenshake_offset)
-                            self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
+                            self.state = self.buttons[self.button_selected].action(self)
+                            print(self.buttons[self.button_selected].action(self))
+
+                            self.button_selected = 0
 
                         else:
                             self.state = self.buttons[self.button_selected].action(self)

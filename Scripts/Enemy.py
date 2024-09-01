@@ -29,10 +29,16 @@ class Enemy(PhysicsEntity):
 
         self.game.player.coins += 1
 
+
         #   Death Sparks
         for i in range(25):
+            speed = random.random() * 5
             angle = random.random() * math.pi * 2
             self.game.sparks.append(Spark((self.rect().x, self.rect().y), angle, 2 + random.random()))
+            self.game.particles.append(Particle(self.game, 'particle', self.rect().center,
+                                           velocity=[math.cos(angle + math.pi) * speed * 0.5,
+                                                     math.sin(angle + math.pi) * speed * 0.5],
+                                           frame=random.randint(0, 7)))
 
     def shoot_and_spark(self, direction, displacement):
         self.game.sfx['shoot'].play()

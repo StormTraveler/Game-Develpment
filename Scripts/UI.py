@@ -1,4 +1,5 @@
 import pygame
+from Utils import center_window
 
 class UI:
     def __init__(self, color=None, leng=(1, 1), size=(16, 16), pos=(0, 0), text="", img=None, font=None, type="Caption", text_color=(255, 255, 255)):
@@ -47,7 +48,7 @@ class Button(UI):
                 key_names = pygame.key.name(key_names)
             text_obj = self.font.render(str(self.text) + ": " + str(key_names), True, self.text_color)
         else:
-            text_obj = self.font.render(self.text, True, self.text_color)
+            text_obj = self.font.render(str(self.text), True, self.text_color)
 
         text_rect = text_obj.get_rect(center=self.rect.center)
         surf.blit(text_obj, text_rect)
@@ -73,7 +74,13 @@ class Button(UI):
             return "Options"
 
         if self.type == "resolution":
-            return "Resolution"
+            self.game.screen_size = self.game.resolutions[self.game.button_selected]
+            if self.game.resolutions[self.game.button_selected] == (1920, 1080):
+                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.NOFRAME, pygame.RESIZABLE)
+                center_window()
+            else:
+                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.RESIZABLE)
+                center_window()
 
         if self.type == "start":
             self.game.level = 1

@@ -5,9 +5,10 @@ auto-py-to-exe
 
 
 TODO:
+Remake the Main Menu
 level select
 save / load
-deflect bullets and can kill
+
 
 
 
@@ -16,9 +17,10 @@ TODO PERFORMANCE:
 
 
 TODO NEXT:
+fix hp ui
 inventory system
 
-Remake the Main Menu
+
 more enemies
 more weapons
 settings icon in the top right of the screen
@@ -34,6 +36,7 @@ save / load
 
 
 TODO POLISH:
+polish resolution menu
 Remake the Main Menu
 Move the grass from side to side when walking
 reset player dash and movement and velocity when loading level
@@ -72,6 +75,7 @@ prevent missed input for jumping on wall regular jump
 
 
 TODO DONE:
+deflect bullets and can kill
 money system
 Optimize Collision Detection: In your Entities.py file, you're checking for collisions between entities and every other entity in the game. This can be quite expensive, especially as the number of entities increases. Consider using a spatial partitioning data structure like a quadtree or a grid to reduce the number of collision checks you need to perform.
 Optimize Rendering: In your Game.py file, you're rendering every entity in the game, regardless of whether it's on-screen or not. Consider implementing a system that only renders entities that are within the viewport.

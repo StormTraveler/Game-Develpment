@@ -3,6 +3,7 @@ import os
 from PIL import Image
 import numpy as np
 import colorsys
+import ctypes
 
 rgb_to_hsv = np.vectorize(colorsys.rgb_to_hsv)
 hsv_to_rgb = np.vectorize(colorsys.hsv_to_rgb)
@@ -117,6 +118,19 @@ def scale_screen(self, new_size):
     self.outline = pygame.Surface(self.zoom_size)
     print("Screen size changed to: " + str(self.screen_size) + " aspect ratio is now " + str(
         self.screen_size[0] / self.screen_size[1]))
+
+
+def center_window():
+    user32 = ctypes.windll.user32
+    screen_width = user32.GetSystemMetrics(0)
+    screen_height = user32.GetSystemMetrics(1)
+
+    window = pygame.display.get_surface()
+    window_size = window.get_size()
+    window_pos = (screen_width // 2 - window_size[0] // 2, screen_height // 2 - window_size[1] // 2)
+
+    ctypes.windll.user32.SetWindowPos(pygame.display.get_wm_info()['window'], 0, window_pos[0], window_pos[1], 0, 0,
+                                      0x0001)
 
 
 class Animation:
