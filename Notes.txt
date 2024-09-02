@@ -5,6 +5,10 @@ auto-py-to-exe
 
 
 TODO:
+
+bullets go behind tiles
+fix menus
+
 Remake the Main Menu
 level select
 save / load

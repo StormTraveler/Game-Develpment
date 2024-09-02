@@ -50,7 +50,7 @@ def load_images_hue(path, hue):
             arr = np.array(base_img)
             hue_shifted_arr = shift_hue(arr, hue / 360.).astype('uint8')
             img = Image.fromarray(hue_shifted_arr, 'RGBA')
-            images.append(img)
+            images.append(img.convert())
     return images
 
 

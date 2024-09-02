@@ -1,9 +1,13 @@
+#!/usr/bin/env pypy
 import random
 import math
 import logging
 import ctypes
 import time
 import sys
+import moderngl
+from array import array
+
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -21,6 +25,8 @@ from Scripts.UI import UI, Button
 logging.basicConfig(level=logging.INFO)
 
 
+
+
 class Game:
     def __init__(self):
         self.screenshake_offset = [0, 0]
@@ -33,6 +39,7 @@ class Game:
         self.sparks = []
         self.render_scroll = None
         pygame.init()
+        pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
         #self.screen_size = [1920, 1080]
         self.resolutions = [(640, 360), (854, 480), (960, 540),
                             (1024, 576), (1280, 720), (1366, 768),
@@ -41,10 +48,12 @@ class Game:
         self.scale_factor = {1: 4, 1.25: 3.2}.get(SF)
         self.screen_size = [self.zoom_size[0] * self.scale_factor, self.zoom_size[1] * self.scale_factor]
 
-        self.screen = pygame.display.set_mode(self.screen_size, pygame.NOFRAME | pygame.RESIZABLE)
-        self.full_display = pygame.Surface([1920, 1080], pygame.SRCALPHA)
-        self.display = pygame.Surface(self.zoom_size, pygame.SRCALPHA)
-        self.outline = pygame.Surface(self.zoom_size)
+        self.screen = pygame.display.set_mode(self.screen_size, pygame.OPENGL | pygame.DOUBLEBUF)
+        self.full_display = pygame.Surface([1920, 1080], pygame.SRCALPHA | pygame.OPENGL | pygame.DOUBLEBUF)
+        self.display = pygame.Surface(self.zoom_size, pygame.SRCALPHA | pygame.OPENGL | pygame.DOUBLEBUF)
+        self.outline = pygame.Surface(self.zoom_size, pygame.OPENGL | pygame.DOUBLEBUF)
+
+        self.outline.set_alpha(None)
 
         self.clock = pygame.time.Clock()
         self.state = "Main Menu"
@@ -67,6 +76,43 @@ class Game:
         self.dialogues = []
         self.framerate = 60
         self.start = time.time()
+
+        self.ctx = moderngl.create_context()
+        self.quad_buffer = self.ctx.buffer(data=array('f', [
+            # position (x, y), uv coords (x, y)
+            -1.0, 1.0, 0.0, 0.0,  # topleft
+            1.0, 1.0, 1.0, 0.0,  # topright
+            -1.0, -1.0, 0.0, 1.0,  # bottomleft
+            1.0, -1.0, 1.0, 1.0,  # bottomright
+        ]))
+
+        self.vert_shader = '''
+        #version 330 core
+
+        in vec2 vert;
+        in vec2 texcoord;
+        out vec2 uvs;
+
+        void main() {
+            uvs = texcoord;
+            gl_Position = vec4(vert, 0.0, 1.0);
+        }
+        '''
+        self.frag_shader = '''
+        #version 330 core
+
+        uniform sampler2D tex;
+
+        in vec2 uvs;
+        out vec4 f_color;
+
+        void main() {
+            vec2 sample_pos = vec2(uvs.x, uvs.y);
+            f_color = vec4(texture(tex, sample_pos).rg, texture(tex, sample_pos).b * 1.5, 1.0);
+        }
+        '''
+        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.frag_shader)
+        self.render_object = self.ctx.vertex_array(self.program, [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')])
 
         if self.ADMIN:
             self.collectables = {
@@ -113,7 +159,7 @@ class Game:
             "spawners": load_images("tiles/spawners"),
             "misc": load_images("tiles/misc"),
             "collectables": load_images("items/collectables"),
-            "background": load_image("background"),
+            "background": pygame.transform.scale(load_image("background"), self.zoom_size),
             "clouds": load_images("clouds"),
             "keys": load_keys("keys/pc/dark"),
 
@@ -304,6 +350,45 @@ class Game:
                 Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
                       2 + random.random()))
 
+    def render_screen(self, menu=False):
+
+        if menu:
+            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), (0, 0))
+            self.screen.blit(self.full_display, [0, 0])
+
+            pygame.display.flip()
+            frame_tex = self.surf_to_texture(self.screen)
+            frame_tex.use(0)
+            self.program['tex'] = 0
+            self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+
+
+            frame_tex.release()
+
+        else:
+
+            self.outline.blit(self.display, (0, 0))
+            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
+            self.screen.blit(self.full_display, [0, 0])
+
+
+            pygame.display.flip()
+            frame_tex = self.surf_to_texture(self.screen)
+            frame_tex.use(0)
+            self.program['tex'] = 0
+            self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+
+
+            frame_tex.release()
+
+
+    def surf_to_texture(self, surf):
+        tex = self.ctx.texture(surf.get_size(), 4)
+        tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        tex.swizzle = 'BGRA'
+        tex.write(surf.get_view('1'))
+
+        return tex
     def run(self):
 
 
@@ -324,7 +409,7 @@ class Game:
         while self.state == 'Game':
             self.display.fill([0, 0, 0, 0])  # Clear the display
             self.full_display.fill([0, 0, 0, 0])  # Clear the full display
-            self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
+            self.outline.blit(self.assets['background'], (0, 0))
             self.screenshake = max(0, self.screenshake - 1)
 
             if not len(self.enemies):  # If no enemies are left go to next level
@@ -402,14 +487,14 @@ class Game:
             last_frame_time = current_time
 
 
-            self.clock.tick(self.framerate)
             self.events()
             self.handle_UI()
-            self.outline.blit(self.display, (0, 0))
-            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
-            self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
 
-            pygame.display.flip()
+
+            self.render_screen()
+
+            self.clock.tick(self.framerate)
+
 
         #   Handle Menu States
         for state in self.menu_states:
@@ -428,12 +513,16 @@ class Game:
 
                 else:  # Handle Menu Animation
                     self.display.fill((0, 0, 0, 0))  # Clear the display
-
                     self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
+                    self.movement[1] = True
+
+
+
                     # Handle Camera
                     self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
                     self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) - 20
                     self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+
 
                     # Handle Leaves
                     for rect in self.leaf_spawners:
@@ -442,33 +531,33 @@ class Game:
                             self.particles.append(
                                 Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-                    # self.clouds.update()
-                    # self.clouds.render(self.outline, offset=self.render_scroll)
+                    if self.clouds_enabled:
+                        self.clouds.update()
+                        self.clouds.render(self.outline, offset=self.render_scroll)
+
+
                     self.tilemap.render(self.display, offset=self.render_scroll)
 
 
-                    self.movement[1] = True
-                    self.handle_player()
 
                     if self.tilemap.misc_tile_check(self.player.pos):  # Jump if the player is on a bouncer
                         self.player.jump(strength=1.2)
 
-                    display_mask = pygame.mask.from_surface(self.display)
-                    display_sillouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
-                    for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # outline
-                        self.outline.blit(display_sillouette, offset)
 
+
+                    self.handle_player()
+                    print(self.player.pos)
                     #   Handle Basic Clockrate and Displays
                     self.clock.tick(self.framerate)
                     self.outline.blit(self.display, (0, 0))
                     self.events()
-                    self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
-                    self.screen.blit(pygame.transform.scale(self.full_display, self.screen_size), [0, 0])
+
 
                     for button in self.buttons:
                         button.render(self.full_display)
 
-                    pygame.display.flip()
+                    self.render_screen(menu=True)
+
 
     def events(self):
         for event in pygame.event.get():
@@ -597,8 +686,19 @@ class Game:
                             sys.exit()
 
 
+import cProfile
+import pstats
+
 if __name__ == "__main__":
     game = Game()
 
     while True:
+        profiler = cProfile.Profile()
+        profiler.enable()
+
         game.run()
+
+        profiler.disable()
+        stats = pstats.Stats(profiler)
+        stats.sort_stats('time')  # Sort by cumulative time
+        stats.print_stats()
