@@ -1,14 +1,9 @@
 import random
 import math
-import sys
 import logging
 import ctypes
 import time
 import sys
-from array import array
-
-import pygame
-import moderngl
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -18,8 +13,7 @@ from Scripts.Player import Player
 from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
 from Scripts.Clouds import Clouds
-from Scripts.particle import Particle
-from Scripts.Spark import Spark
+from Scripts.particle import Particle, Spark
 from Scripts.Menu import handle_state
 from Scripts.UI import UI, Button
 
@@ -40,15 +34,14 @@ class Game:
         self.render_scroll = None
         pygame.init()
         #self.screen_size = [1920, 1080]
-        self.resolutions = [(640, 360), (854, 480), (960, 540), (1024, 576), (1280, 720), (1366, 768), (1600, 900),
-                            (1920, 1080)]
+        self.resolutions = [(640, 360), (854, 480), (960, 540),
+                            (1024, 576), (1280, 720), (1366, 768),
+                            (1600, 900), (1920, 1080)]
         self.zoom_size = [480, 270]  # 16:9 aspect ratio 480:270
         self.scale_factor = {1: 4, 1.25: 3.2}.get(SF)
         self.screen_size = [self.zoom_size[0] * self.scale_factor, self.zoom_size[1] * self.scale_factor]
 
         self.screen = pygame.display.set_mode(self.screen_size, pygame.NOFRAME | pygame.RESIZABLE)
-        pygame.display.set_caption("Test")
-
         self.full_display = pygame.Surface([1920, 1080], pygame.SRCALPHA)
         self.display = pygame.Surface(self.zoom_size, pygame.SRCALPHA)
         self.outline = pygame.Surface(self.zoom_size)
@@ -63,11 +56,12 @@ class Game:
         self.buttons = []
         self.button_selected = 0
         self.selected_keybind_button = None
-        self.music = True  # Music Toggle
         self.key_code = None
         self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Resolution", "Inventory"]
         self.screenshake = 0
         self.music_volume = 0.5
+        self.music = True
+        self.clouds_enabled = False
         self.ADMIN = True
         self.UIs = []
         self.dialogues = []
@@ -141,7 +135,7 @@ class Game:
             "enemy/run": Animation(load_images("entities/enemy/run"), 4),
             "slash/idle": Animation(load_images("particles/slash"), 1, loop=False),
             "gun": load_image("gun"),
-            "projectile": load_image("projectile"),
+            "bullet": load_image("bullet"),
             "ButtonSelected": pygame.image.load("data/images/ButtonSelect.png").convert_alpha(),
             "MenuBackground": load_image("MenuBackground"),
 
@@ -160,11 +154,12 @@ class Game:
             "ambience": pygame.mixer.Sound("data/sfx/ambience.wav"),
         }
 
-        self.sfx['ambience'].set_volume(0.3)
-        self.sfx['jump'].set_volume(0.3)
-        self.sfx['dash'].set_volume(0.1)
-        self.sfx['hit'].set_volume(0.5)
-        self.sfx['shoot'].set_volume(0.2)
+        self.sfx["jump"].set_volume(0.3)
+        self.sfx["dash"].set_volume(0.2)
+        self.sfx["hit"].set_volume(0.5)
+        self.sfx["shoot"].set_volume(0.2)
+        self.sfx["ambience"].set_volume(0.3)
+
         pygame.mixer.music.load("data/music.wav")
 
         #   Player INIT and Tilemap INIT
@@ -178,7 +173,8 @@ class Game:
             if f.is_file():
                 self.max_level += 1
         self.load_level(self.level)
-        self.clouds = Clouds(self.assets['clouds'], count=6)
+        if self.clouds_enabled:
+            self.clouds = Clouds(self.assets['clouds'], count=6)
 
         logging.info("Max Level:" + str(self.max_level))
 
@@ -247,6 +243,13 @@ class Game:
                                speed=self.player.speed * self.dt + 120 // self.framerate)
             self.player.render(self.display, offset=self.render_scroll)
 
+    def handle_enemies(self):
+        for enemy in self.enemies:
+            enemy.update(self.tilemap, (0, 0), offset=self.render_scroll)
+            if self.debugging:
+                enemy.draw_hitbox()
+            enemy.render(self.display, offset=self.render_scroll)
+
     def handle_UI(self):
         for ui in self.UIs:
             if ui.img == self.assets["health"]:
@@ -256,11 +259,50 @@ class Game:
                 ui.update(self.full_display)
 
             ui.render(self.full_display)
+        if self.debugging:
+            fps = self.clock.get_fps()
+            fps_text = pygame.font.Font(None, 30).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
+            self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
+
+        money_text = pygame.font.Font(None, 30).render(f"{self.player.coins}", True, (205, 220, 25))
+        self.display.blit(money_text, (16, 16))
 
     def handle_dialogues(self):
         for d in self.dialogues:
             d.update(self.full_display)
             d.render(self.full_display)
+
+    def handle_clouds(self):
+        if self.clouds_enabled:
+            self.clouds.update()
+            self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
+
+    def handle_transition_graphics(self):
+        if self.transition:
+            transition_surf = pygame.Surface((self.display.get_size()))
+            pygame.draw.circle(transition_surf, (255, 255, 255),
+                               (self.display.get_width() // 2, self.display.get_height() // 2),
+                               (30 - abs(self.transition)) * 8)
+            transition_surf.set_colorkey((255, 255, 255))
+            self.display.blit(transition_surf, (0, 0))
+
+    def create_explosion(self, x, y):
+        for i in range(30):
+            angle = random.random() * math.pi * 2
+            speed = random.random() * 5
+            self.sparks.append(Spark((x, y), angle, 2 + random.random()))
+            self.particles.append(Particle(self, 'particle', self.player.rect().center,
+                                           velocity=[math.cos(angle + math.pi) * speed * 0.5,
+                                                     math.sin(angle + math.pi) * speed * 0.5],
+                                           frame=random.randint(0, 7)))
+
+    def create_sparks(self, x, y, flipped):
+        for i in range(4):
+
+
+            self.sparks.append(
+                Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
+                      2 + random.random()))
 
     def run(self):
 
@@ -308,110 +350,51 @@ class Game:
                     self.particles.append(
                         Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-            # self.clouds.update()
-            # self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
-            self.tilemap.render(self.display, offset=self.render_scroll)
 
-            # Handle Enemies
-            for enemy in self.enemies:
-                enemy.update(self.tilemap, (0, 0), offset=self.render_scroll)
-                if self.debugging:
-                    enemy.draw_hitbox()
-                enemy.render(self.display, offset=self.render_scroll)
 
-            # (x, y), direction, timer
+
+
+            # (x, y), direction, timer, bounced
             for projectile in self.projectiles:
-                projectile[0][0] += projectile[1][0]
-                projectile[2] += 1
-                img = self.assets['projectile']
-                self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - self.render_scroll[0],
-                                        projectile[0][1] - img.get_height() / 2 - self.render_scroll[1]))
-
-                if self.tilemap.solid_check(projectile[0]):
-                    self.projectiles.remove(projectile)  # remove if colliding with wall
-                    for i in range(4):
-                        self.sparks.append(
-                            Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[0][1] > 0 else 0),
-                                  2 + random.random()))
-
-                elif projectile[2] > 360:
-                    self.projectiles.remove(projectile)
-
-                if self.player.rect().collidepoint(projectile[0]):  # it hit the player
-                    if (abs(self.player.dashing[0]) < 30 and abs(
-                            self.player.dashing[1]) < 30):  # after first 30 frames of dashing
-                        self.projectiles.remove(projectile)
-                        self.player.hurt(1)
-                        self.screenshake = max(32, self.screenshake)
-
-                        #   Make Explosion
-                        for i in range(30):
-                            angle = random.random() * math.pi * 2
-                            speed = random.random() * 5
-                            self.sparks.append(Spark(self.player.rect().center, angle, 2 + random.random()))
-                            self.particles.append(Particle(self, 'particle', self.player.rect().center,
-                                                           velocity=[math.cos(angle + math.pi) * speed * 0.5,
-                                                                     math.sin(angle + math.pi) * speed * 0.5],
-                                                           frame=random.randint(0, 7)))
-                    else:
-                        self.projectiles.remove(projectile)
-                        logging.info("projectile removed")
-                for slash in self.player.slashes:
-                    if not projectile[3] and slash.rect().colliderect(pygame.Rect(projectile[0][0] - 4, projectile[0][1] - 4, 8, 8)):
-                        projectile[1] = projectile[1][0] * -1, projectile[1][1]
-                        projectile[3] = True
-                        print(projectile)
-
-                if projectile[3]:   #   Reflected by player so it can kill enemies
-                    for enemy in self.enemies:
-                        if enemy.rect().colliderect(pygame.Rect(projectile[0][0] - 4, projectile[0][1] - 4, 8, 8)):
-                            enemy.die()
-                            self.projectiles.remove(projectile)
-                            for i in range(4):
-                                self.sparks.append(
-                                    Spark(projectile[0], random.random() - 0.5 + math.pi, random.random() + 2))
+                projectile.update()
+                projectile.render(self.display, offset=self.render_scroll)
 
 
             for spark in self.sparks:
-                kill = spark.update()
                 spark.render(self.display, offset=self.render_scroll)
-                if kill:
+                if spark.update():
                     self.sparks.remove(spark)
 
+            for particle in self.particles:
+                particle.render(self.display, offset=self.render_scroll)
+
+                if particle.type == 'leaf':
+                    particle.pos[0] += math.sin(particle.animation.frame * 0.035) * 0.3
+
+                if particle.update():
+                    self.particles.remove(particle)
+
+
+
+            self.tilemap.render(self.display, offset=self.render_scroll)
             self.handle_player()
+            self.handle_enemies()
+            self.handle_clouds()
+            self.handle_transition_graphics()
+
 
             display_mask = pygame.mask.from_surface(self.display)
             display_sillouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
             for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # outline
                 self.outline.blit(display_sillouette, offset)
 
-            for particle in self.particles:
-                kill = particle.update()
-                particle.render(self.display, offset=self.render_scroll)
-
-                if particle.type == 'leaf':
-                    particle.pos[0] += math.sin(particle.animation.frame * 0.035) * 0.3
-                if kill:
-                    self.particles.remove(particle)
-
-            if self.transition:
-                transition_surf = pygame.Surface((self.display.get_size()))
-                pygame.draw.circle(transition_surf, (255, 255, 255),
-                                   (self.display.get_width() // 2, self.display.get_height() // 2),
-                                   (30 - abs(self.transition)) * 8)
-                transition_surf.set_colorkey((255, 255, 255))
-                self.display.blit(transition_surf, (0, 0))
-
             self.screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2,
                                        random.random() * self.screenshake - self.screenshake / 2)
 
-            if self.debugging:
-                fps = self.clock.get_fps()
-                fps_text = pygame.font.Font(None, 30).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
-                self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
 
-            money_text = pygame.font.Font(None, 30).render(f"{self.player.coins}", True, (205, 220, 25))
-            self.display.blit(money_text, (16, 16))
+
+
+
             #   Handle Basic Clockrate and Displays
 
             current_time = time.time()

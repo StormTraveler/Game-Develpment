@@ -36,6 +36,7 @@ save / load
 
 
 TODO POLISH:
+wait a few seconds after death before resetting
 polish resolution menu
 Remake the Main Menu
 Move the grass from side to side when walking

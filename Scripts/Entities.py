@@ -1,9 +1,8 @@
 import random
 
 import pygame
-from Scripts.particle import Particle
+from Scripts.particle import Spark
 import math
-from Scripts.Spark import Spark
 import logging
 
 logging.basicConfig(level=logging.CRITICAL)

@@ -1,8 +1,7 @@
 from Scripts.Entities import PhysicsEntity
 import random
 import pygame
-from Scripts.particle import Particle
-from Scripts.Spark import Spark
+from Scripts.particle import Particle, Spark, Projectile
 import math
 import logging
 
@@ -40,13 +39,14 @@ class Enemy(PhysicsEntity):
                                                      math.sin(angle + math.pi) * speed * 0.5],
                                            frame=random.randint(0, 7)))
 
-    def shoot_and_spark(self, direction, displacement):
+    def shoot_and_spark(self, vel):
         self.game.sfx['shoot'].play()
-        self.game.projectiles.append(
-            [[self.rect().centerx + displacement, self.rect().centery], [direction * 1.5, 0], 0, False])
-        for i in range(4):
-            self.game.sparks.append(
-                Spark(self.game.projectiles[-1][0], random.random() - 0.5 + math.pi, random.random() + 2))
+
+        self.game.projectiles.append(Projectile(self.game, self.rect().center, [vel[0] * 1.5, 0], 320,
+                                                False, 1, img=self.game.assets['bullet']))
+
+
+        self.game.create_sparks(self.rect().centerx, self.rect().centery, self.flip)
 
 
 
@@ -66,9 +66,9 @@ class Enemy(PhysicsEntity):
                 dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
                 if abs(dis[1] < 16):  # Shoots
                     if self.flip and dis[0] < 0:
-                        self.shoot_and_spark(-1, -7)
+                        self.shoot_and_spark((-1, 0))
                     elif not self.flip and dis[0] > 0:
-                        self.shoot_and_spark(1, 7)
+                        self.shoot_and_spark((1, 0))
 
 
         elif random.random() < 0.01:
