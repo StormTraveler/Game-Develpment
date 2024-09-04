@@ -1,11 +1,24 @@
 from Scripts.UI import Button
 import pygame
-
+import moderngl
 
 def handle_state(game, state):
     menu = Menu(game, state)
     game.buttons = menu.get_buttons()
     menu.update()
+
+def menu_render(game):
+    game.screen.blit(pygame.transform.scale(game.outline, game.screen_size), (0, 0))
+    game.screen.blit(game.full_display, [0, 0])
+
+
+    pygame.display.flip()
+    frame_tex = game.surf_to_texture(game.screen)
+    frame_tex.use(0)
+    game.program['tex'] = 0
+    game.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+
+    frame_tex.release()
 
 
 class Menu:
@@ -101,8 +114,9 @@ class Menu:
             self.game.screen.blit(self.game.assets["ButtonSelected"], self.game.selected_coords)
 
         self.game.events()
+        menu_render(self.game)
         self.game.clock.tick(60)
 
-        pygame.display.flip()
+
 
 
