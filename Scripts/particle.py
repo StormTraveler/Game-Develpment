@@ -109,7 +109,10 @@ class Projectile():
                 for enemy in self.game.enemies:
                     if enemy.rect().colliderect(pygame.Rect(self.pos[0] - 4, self.pos[1] - 4, 8, 8)):
                         enemy.die()
-                        self.game.projectiles.remove(self)
+                        try:
+                            self.game.projectiles.remove(self)
+                        except:
+                            pass
                         self.game.sfx['hit'].play()
                         if self.velocity[0] > 0:
                             self.game.create_sparks(self.pos[0], self.pos[1], True)
