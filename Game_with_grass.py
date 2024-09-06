@@ -77,7 +77,7 @@ class Game:
         self.framerate = 60
         self.start = time.time()
 
-        self.gm = GrassManager('grass_testing/grass', tile_size=16, stiffness=600, max_unique=5, place_range=[0, 1])
+        self.gm = GrassManager('grass_testing/grass', tile_size=32, stiffness=600, max_unique=5, place_range=[0, 1])
         self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
         self.gt = 0
 
@@ -85,7 +85,8 @@ class Game:
             for x in range(20):
                 v = random.random()
                 if v > 0.01:
-                    self.gm.place_tile((x*16, y*16), int(v * 12), [0, 1, 2, 3, 4])
+                    self.gm.place_tile((x, y), int(v * 32), [0, 1, 2, 3, 4])
+                    #   X, Y, Density, grass options
 
 
         self.ctx = moderngl.create_context()

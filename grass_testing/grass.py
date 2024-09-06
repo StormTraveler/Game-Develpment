@@ -78,6 +78,8 @@ import pygame
 import time
 
 
+TILESIZE = 32
+
 def normalize(val, amt, target):
     if val > target + amt:
         val -= amt
@@ -89,7 +91,7 @@ def normalize(val, amt, target):
 
 # the main object that manages the grass system
 class GrassManager:
-    def __init__(self, grass_path, tile_size=16, shade_amount=100, stiffness=360, max_unique=10, place_range=[1, 1], padding=13):
+    def __init__(self, grass_path, tile_size=32, shade_amount=100, stiffness=360, max_unique=10, place_range=[1, 1], padding=13):
         # asset manager
         self.ga = GrassAssets(grass_path, self)
 
@@ -150,23 +152,33 @@ class GrassManager:
 
     # an update and render combination function
 
-    def new_update_render(self, surf, dt, offset=(0, 0), rot_function=None):
-        visible_tile_range = (int(surf.get_width()) // self.tile_size + 1, int((surf.get_height()) // self.tile_size) + 1)
-        base_pos = (int(offset[0]), int(offset[1]))
+    def update_render(self, surf, dt, offset=(0, 0), rot_function=None):
+        visible_tile_range = (int(surf.get_width() // self.tile_size) + 2, int(surf.get_height() // self.tile_size) + 2)    #   should be 30x16 + 2 on each in case of being in the middle of a tile
+
+        base_pos = (int(offset[0] // self.tile_size), int(offset[1]) // self.tile_size) #   should be the x, y of the top left tile in tile scale
 
         render_list = []
+        for y in range(visible_tile_range[1]):
+            for x in range(visible_tile_range[0]):
+                pos = ((base_pos[0] + x), (base_pos[1] + y))
+                if pos in self.grass_tiles:
+                    render_list.append(pos)
 
+        if self.ground_shadow[0]:
+            for pos in render_list:
+                self.grass_tiles[pos].render_shadow(surf, offset=((offset[0] - self.ground_shadow[3][0]), offset[1] - self.ground_shadow[3][1]))
 
-    def update_render(self, surf, dt, offset=(0, 0), rot_function=None):
+        # render the grass tiles
+        for pos in render_list:
+            tile = self.grass_tiles[pos]
+            tile.render(surf, dt, offset=offset)
+            if rot_function:
+                tile.set_rotation(rot_function(tile.loc[0], tile.loc[1]))
+
+    def old_update_render(self, surf, dt, offset=(0, 0), rot_function=None):
         visible_tile_range = (int(surf.get_width() // self.tile_size) + 1, int(surf.get_height() // self.tile_size) + 4)
         #print(visible_tile_range)
         base_pos = (int(offset[0]), int(offset[1] - 1))
-        if int(time.time()) % 10 == 0:
-            #print(base_pos)
-            pass
-
-        print(visible_tile_range)
-        print(base_pos)
 
 
         # get list of grass tiles to render based on visible area
@@ -177,7 +189,12 @@ class GrassManager:
                 if pos in self.grass_tiles:
                     render_list.append(pos)
 
+        x_list = []
 
+        for x in range(len(render_list)):
+            x_list.append(render_list[x][0])
+
+        print(x_list)
 
 
         # render shadow if applicable
@@ -324,13 +341,13 @@ class GrassTile:
     # draw the shadow image for the tile
     def render_shadow(self, surf, offset=(0, 0)):
         if self.gm.ground_shadow[0] and (self.base_id in self.gm.shadow_cache):
-            surf.blit(self.gm.shadow_cache[self.base_id], (self.loc[0] - offset[0] - self.padding, self.loc[1] - offset[1] - self.padding))
+            surf.blit(self.gm.shadow_cache[self.base_id], ((self.loc[0] * TILESIZE) - offset[0] - self.padding, (self.loc[1] * TILESIZE) - offset[1] - self.padding))
 
     # draw the grass itself
     def render(self, surf, dt, offset=(0, 0)):
         # render a new grass tile image if using custom uncached data otherwise use cached data if possible
         if self.custom_blade_data:
-            surf.blit(self.render_tile(), (self.loc[0] - offset[0] - self.padding, self.loc[1] - offset[1] - self.padding))
+            surf.blit(self.render_tile(), ((self.loc[0] * TILESIZE - offset[0] - self.padding), (self.loc[1] * TILESIZE - offset[1] - self.padding)))
 
         else:
             # check if a new cached image needs to be generated and use the cached data if not (also cache shadow if necessary)
@@ -342,7 +359,7 @@ class GrassTile:
                 self.gm.grass_cache[self.render_data] = self.render_tile()
 
             # render image from the cache
-            surf.blit(self.gm.grass_cache[self.render_data], (self.loc[0] - offset[0] - self.padding, self.loc[1] - offset[1] - self.padding))
+            surf.blit(self.gm.grass_cache[self.render_data], (self.loc[0] * TILESIZE - offset[0] - self.padding, self.loc[1] * TILESIZE - offset[1] - self.padding))
 
         # attempt to move blades back to their base position
         if self.custom_blade_data:
