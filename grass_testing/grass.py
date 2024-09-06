@@ -158,9 +158,9 @@ class GrassManager:
 
 
     def update_render(self, surf, dt, offset=(0, 0), rot_function=None):
-        visible_tile_range = (int(surf.get_width() // self.tile_size) + 1, int(surf.get_height() // self.tile_size) + 1)
+        visible_tile_range = (int(surf.get_width() // self.tile_size) + 1, int(surf.get_height() // self.tile_size) + 4)
         #print(visible_tile_range)
-        base_pos = (int(offset[0]), int(offset[1]))
+        base_pos = (int(offset[0]), int(offset[1] - 1))
         if int(time.time()) % 10 == 0:
             #print(base_pos)
             pass
@@ -173,7 +173,7 @@ class GrassManager:
         render_list = []
         for y in range(visible_tile_range[1]):
             for x in range(visible_tile_range[0]):
-                pos = ((base_pos[0] + x), (base_pos[1] + y))
+                pos = ((base_pos[0] + x)*16, (base_pos[1] + y) * 16)
                 if pos in self.grass_tiles:
                     render_list.append(pos)
 

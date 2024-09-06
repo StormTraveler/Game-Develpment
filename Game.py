@@ -74,7 +74,7 @@ class Game:
         self.ADMIN = True
         self.UIs = []
         self.dialogues = []
-        self.framerate = 60
+        self.framerate = 120
         self.start = time.time()
 
         self.ctx = moderngl.create_context()
