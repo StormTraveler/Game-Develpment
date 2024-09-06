@@ -121,8 +121,8 @@ class Tilemap:
         return False
 
     def render(self, surf, offset=(0, 0), collision=True, misc=False):
-        # Calculate the visible area
-        visible_area = pygame.Rect(offset[0], offset[1], self.game.zoom_size[0], self.game.zoom_size[1])
+        # Calculate the visible area            #### 20 is the buffer and 40 is to add 20 to the other sides aswell
+        visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
 
         # Render offgrid tiles
         for tile in self.offgrid_tiles:

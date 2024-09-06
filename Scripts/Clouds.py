@@ -8,6 +8,7 @@ class Cloud:
         self.speed = speed
         self.depth = depth
 
+
     def update(self):
         self.pos[0] += self.speed
 
