@@ -355,7 +355,8 @@ class Game:
     def render_screen(self, menu=False):
 
         if menu:
-            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), (0, 0))
+            self.outline.blit(self.display, (0, 0))
+            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(self.full_display, [0, 0])
 
             pygame.display.flip()
@@ -366,6 +367,7 @@ class Game:
 
 
             frame_tex.release()
+
 
         else:
 
@@ -507,11 +509,29 @@ class Game:
                 self.buttons.append(
                     Button(self, (100, 200, 200, 50), text="Options", type="options", imgs="MenuButton"))
                 self.buttons.append(Button(self, (100, 300, 200, 50), text="Quit", type="quit", imgs="MenuButton"))
+
+
+
+
                 print("Menu Loaded")
 
             while self.state == state:
                 if self.state != "Main Menu":
+                    self.full_display.fill([0, 0, 0, 0])
                     handle_state(self, state)
+                    self.events()
+                    self.clock.tick(self.framerate)
+                    self.outline.blit(self.display, (0, 0))
+
+
+
+                    for button in self.buttons:
+                        button.render(self.full_display)
+
+                    self.render_screen(menu=True)
+
+
+
 
                 else:  # Handle Menu Animation
                     self.display.fill((0, 0, 0, 0))  # Clear the display

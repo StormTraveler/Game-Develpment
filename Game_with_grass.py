@@ -385,35 +385,17 @@ class Game:
         return rot_function
 
     def render_screen(self, menu=False):
+        self.screen.blit(self.full_display, [0, 0])
+        self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), (0, 0))
 
-        if menu:
-            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), (0, 0))
-            self.screen.blit(self.full_display, [0, 0])
-
-            pygame.display.flip()
-            frame_tex = self.surf_to_texture(self.screen)
-            frame_tex.use(0)
-            self.program['tex'] = 0
-            self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+        pygame.display.flip()
+        frame_tex = self.surf_to_texture(self.screen)
+        frame_tex.use(0)
+        self.program['tex'] = 0
+        self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
 
 
-            frame_tex.release()
-
-        else:
-            self.outline.blit(self.display, (0, 0))
-            self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
-            self.screen.blit(self.full_display, [0, 0])
-
-
-            pygame.display.flip()
-            frame_tex = self.surf_to_texture(self.screen)
-            frame_tex.use(0)
-            self.program['tex'] = 0
-            self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
-
-
-            frame_tex.release()
-
+        frame_tex.release()
 
     def surf_to_texture(self, surf):
         tex = self.ctx.texture(surf.get_size(), 4)
@@ -545,7 +527,16 @@ class Game:
 
             while self.state == state:
                 if self.state != "Main Menu":
+                    self.full_display.fill([0, 0, 0, 0])
                     handle_state(self, state)
+                    self.events()
+                    self.clock.tick(self.framerate)
+                    self.outline.blit(self.display, (0, 0))
+
+                    for button in self.buttons:
+                        button.render(self.full_display)
+
+                    self.render_screen(menu=True)
 
                 else:  # Handle Menu Animation
                     self.display.fill((0, 0, 0, 0))  # Clear the display

@@ -8,9 +8,9 @@ def handle_state(game, state):
     menu.update()
 
 def menu_render(game):
-    game.screen.blit(pygame.transform.scale(game.outline, game.screen_size), (0, 0))
+    game.outline.blit(game.display, (0, 0))
+    game.screen.blit(pygame.transform.scale(game.outline, game.screen_size), game.screenshake_offset)
     game.screen.blit(game.full_display, [0, 0])
-
 
     pygame.display.flip()
     frame_tex = game.surf_to_texture(game.screen)
@@ -111,11 +111,9 @@ class Menu:
 
 
         if not self.game.state == "Keybinds" or self.game.state == "Inventory":
-            self.game.screen.blit(self.game.assets["ButtonSelected"], self.game.selected_coords)
+            self.game.full_display.blit(self.game.assets["ButtonSelected"], self.game.selected_coords)
 
-        self.game.events()
-        menu_render(self.game)
-        self.game.clock.tick(60)
+
 
 
 
