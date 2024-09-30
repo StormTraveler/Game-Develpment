@@ -10,7 +10,7 @@ import os
 print(os.getcwd())
 
 
-MAP_TO_EDIT = "data/maps/3.json"
+MAP_TO_EDIT = "data/maps/5.json"
 class Editor:
     def __init__(self):
         self.game_size = [640, 480]
@@ -72,7 +72,7 @@ class Editor:
         self.tile_list = list(self.assets)
         self.tile_group = 0
         self.tile_variant = 0
-        self.clicking = False
+        self.clicking = Falsea
         self.right_clicking = False
         self.shift = False
         self.alt = False
