@@ -18,12 +18,12 @@ from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
 from Scripts.Clouds import Clouds
 from Scripts.particle import Particle, Spark
-from Scripts.Menu import handle_state
 from Scripts.UI import UI, Button
+from Scripts.grass import *
+from Scripts.Menu import *
 
 # os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0" Makes it open in the top left
 logging.basicConfig(level=logging.INFO)
-
 
 
 
@@ -70,12 +70,18 @@ class Game:
         self.screenshake = 0
         self.music_volume = 0.5
         self.music = True
-        self.clouds_enabled = False
+        self.clouds_enabled = True
         self.ADMIN = True
         self.UIs = []
         self.dialogues = []
         self.framerate = 60
         self.start = time.time()
+
+        self.gm = GrassManager('data/images/grass', tile_size=16, stiffness=600, max_unique=5, place_range=[1, 1])
+        self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
+        self.gt = 0
+
+
 
         self.ctx = moderngl.create_context()
         self.quad_buffer = self.ctx.buffer(data=array('f', [
@@ -154,7 +160,7 @@ class Game:
             "grass": load_images("tiles/grass"),
             "sand": load_images("tiles/sand"),
             "large_decor": load_images("tiles/large_decor"),
-            "grass_tuft": load_images("tiles/grass_tuft"),
+            "grass_blades": load_images("tiles/grass_blades"),
             "stone": load_images("tiles/stone"),
             "spawners": load_images("tiles/spawners"),
             "misc": load_images("tiles/misc"),
@@ -210,7 +216,7 @@ class Game:
 
         #   Player INIT and Tilemap INIT
         self.player = Player(self, [50, 50], [8, 15], speed=2, max_health=3, health=3)
-        self.tilemap = Tilemap(self, tile_size=32)
+        self.tilemap = Tilemap(self, tile_size=16)
 
         #   Handle Map Initializing
         self.level = 0
@@ -233,6 +239,7 @@ class Game:
 
         self.tilemap.load('data/maps/' + str(map_id) + '.json')
 
+        self.gm.grass_tiles = {}
         self.leaf_spawners = []
         for tree in self.tilemap.extract(id_pairs=[('large_decor', 2)], keep=True):
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
@@ -300,15 +307,32 @@ class Game:
         for ui in self.UIs:
             if ui.img == self.assets["health"]:
                 ui.update(self.full_display, leng=[self.player.health, 1])
-                print("hey")
             else:
                 ui.update(self.full_display)
 
             ui.render(self.full_display)
         if self.debugging:
             fps = self.clock.get_fps()
-            fps_text = pygame.font.Font(None, 30).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
+            fps_text = pygame.font.Font(None, 20).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
             self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
+
+            # x = pygame.font.Font(None, 20).render(f"X: {round(self.player.pos[0], 2)}", True, (255, 255, 255))
+            # self.display.blit(x, (0, 50))
+            #
+            # y = pygame.font.Font(None, 20).render(f"Y: {int(self.player.pos[1])}", True, (255, 255, 255))
+            # self.display.blit(y, (0, 80))
+            #
+            # scrollx = pygame.font.Font(None, 20).render(f"Scroll X: {int(self.scroll[0])}", True, (255, 255, 255))
+            # self.display.blit(scrollx, (0, 110))
+            #
+            # scrolly = pygame.font.Font(None, 20).render(f"Scroll Y: {int(self.scroll[1])}", True, (255, 255, 255))
+            # self.display.blit(scrolly, (0, 140))
+            #
+            # renderscrollx = pygame.font.Font(None, 20).render(f"Render Scroll X: {int(self.render_scroll[0])}", True, (255, 255, 255))
+            # self.display.blit(renderscrollx, (0, 170))
+            #
+            # renderscrolly = pygame.font.Font(None, 20).render(f"Render Scroll Y: {int(self.render_scroll[1])}", True, (255, 255, 255))
+            # self.display.blit(renderscrolly, (0, 200))
 
         money_text = pygame.font.Font(None, 30).render(f"{self.player.coins}", True, (205, 220, 25))
         self.display.blit(money_text, (16, 16))
@@ -350,6 +374,11 @@ class Game:
                 Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
                       2 + random.random()))
 
+    def handle_grass(self):
+        rot_function = lambda x, y: int(math.sin(self.gt / 60 + x / 100) * 15)
+        self.gt += self.dt * 100
+        return rot_function
+
     def render_screen(self, menu=False):
 
         if menu:
@@ -366,7 +395,6 @@ class Game:
             frame_tex.release()
 
         else:
-
             self.outline.blit(self.display, (0, 0))
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(self.full_display, [0, 0])
@@ -438,6 +466,9 @@ class Game:
 
 
 
+            self.tilemap.render(self.display, offset=self.render_scroll)
+            self.gm.update_render(self.display, self.dt, offset=self.render_scroll,
+                                      rot_function=self.handle_grass())
 
             # (x, y), direction, timer, bounced
             for projectile in self.projectiles:
@@ -461,7 +492,8 @@ class Game:
 
 
 
-            self.tilemap.render(self.display, offset=self.render_scroll)
+
+
             self.handle_player()
             self.handle_enemies()
             self.handle_clouds()
@@ -499,17 +531,27 @@ class Game:
         #   Handle Menu States
         for state in self.menu_states:
             if self.state == "Main Menu":
-                self.buttons = []
                 self.load_level(0)
-                self.buttons.append(Button(self, (100, 100, 200, 50), text="Start", type="start", imgs="MenuButton"))
-                self.buttons.append(
-                    Button(self, (100, 200, 200, 50), text="Options", type="options", imgs="MenuButton"))
-                self.buttons.append(Button(self, (100, 300, 200, 50), text="Quit", type="quit", imgs="MenuButton"))
-                print("Menu Loaded")
+                self.buttons = get_buttons(self, state)
+            else:
+                self.buttons = get_buttons(self, state)
 
             while self.state == state:
                 if self.state != "Main Menu":
-                    handle_state(self, state)
+                    self.full_display.fill((0, 0, 0, 0))  # Clear the full display
+
+
+                    #   Handle Basic Clockrate and Displays
+                    self.clock.tick(self.framerate)
+                    self.outline.blit(self.display, (0, 0))
+                    self.events()
+
+                    for button in self.buttons:
+                        button.render(self.full_display)
+
+                    print(len(self.buttons))
+
+                    self.render_screen(menu=True)
 
                 else:  # Handle Menu Animation
                     self.display.fill((0, 0, 0, 0))  # Clear the display
@@ -546,7 +588,6 @@ class Game:
 
 
                     self.handle_player()
-                    print(self.player.pos)
                     #   Handle Basic Clockrate and Displays
                     self.clock.tick(self.framerate)
                     self.outline.blit(self.display, (0, 0))

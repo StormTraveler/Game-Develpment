@@ -5,9 +5,6 @@ auto-py-to-exe
 
 
 TODO:
-Fix Grass only rendering part
-fix what menu render order
-
 bullets go behind tiles
 fix menus
 

@@ -10,7 +10,7 @@ import os
 print(os.getcwd())
 
 
-MAP_TO_EDIT = "data/maps/3.json"
+MAP_TO_EDIT = "data/maps/1.json"
 class Editor:
     def __init__(self):
         self.game_size = [640, 480]
@@ -42,6 +42,7 @@ class Editor:
             "cave": load_images("tiles/cave"),
             "jungle": load_images("tiles/jungle"),
             "keys": load_keys("keys/pc/dark"),
+            "grass_blades": load_images("tiles/grass_blades"),
 
 
 
@@ -62,7 +63,7 @@ class Editor:
 
 
 
-        self.tilemap = Tilemap(self, tile_size=16)
+        self.tilemap = Tilemap(self, tile_size=16, editor=True)
         try:
             self.tilemap.load(MAP_TO_EDIT)
         except FileNotFoundError:

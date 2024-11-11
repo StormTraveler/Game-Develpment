@@ -27,11 +27,12 @@ COLLECTABLE_KEYS = {
 }
 
 class Tilemap:
-    def __init__(self, game, tile_size=64):
+    def __init__(self, game, tile_size=16, editor=False):
         self.tile_size = tile_size
         self.tilemap = {}
         self.offgrid_tiles = []
         self.game = game
+        self.editor = editor
 
     def extract(self, id_pairs, keep=False):
         matches = []
@@ -136,10 +137,13 @@ class Tilemap:
             for y in range(offset[1] // self.tile_size, (offset[1] + surf.get_height()) // self.tile_size + 1):
                 loc = str(x) + ';' + str(y)
                 if loc in self.tilemap:
-                    tile = self.tilemap[loc]
-                    surf.blit(self.game.assets[tile['type']][tile['variant']],
-                              [tile['pos'][0] * self.tile_size - offset[0],
-                               tile['pos'][1] * self.tile_size - offset[1]])
+                    if self.tilemap[loc]['type'] == 'grass_blades' and self.editor == False:
+                        self.game.gm.place_tile((x, y), self.tilemap[loc]['variant'] * 8)
+                    else:
+                        tile = self.tilemap[loc]
+                        surf.blit(self.game.assets[tile['type']][tile['variant']],
+                                  [tile['pos'][0] * self.tile_size - offset[0],
+                                   tile['pos'][1] * self.tile_size - offset[1]])
 
     def render_old(self, surf, offset=(0, 0), collision=True, misc=False):
 
