@@ -1,23 +1,11 @@
-from Scripts.UI import Button
+from Scripts.UI import Button, Slider
 import pygame
 import moderngl
-
-def menu_render(game):
-    game.screen.blit(pygame.transform.scale(game.outline, game.screen_size), (0, 0))
-    game.screen.blit(game.full_display, [0, 0])
-
-
-    pygame.display.flip()
-    frame_tex = game.surf_to_texture(game.screen)
-    frame_tex.use(0)
-    game.program['tex'] = 0
-    game.render_object.render(mode=moderngl.TRIANGLE_STRIP)
-
-    frame_tex.release()
 
 
 def get_buttons(game, state):
     buttons = []
+    sliders = []
     print(state)
     match state:
         case 'Main Menu':
@@ -27,7 +15,6 @@ def get_buttons(game, state):
             print("Menu Loaded")
             return buttons
 
-
         case 'Pause':
             buttons.append(Button(game, (100, 100, 200, 50), "Resume", type="resume", imgs='MenuButton'))
             buttons.append(Button(game, (100, 200, 200, 50), "Restart", type="restart", imgs='MenuButton'))
@@ -36,13 +23,18 @@ def get_buttons(game, state):
             buttons.append(Button(game, (100, 500, 200, 50), "Quit", type="quit", imgs='MenuButton'))
             return buttons
 
-
         case 'Options':
             buttons.append(Button(game, (100, 100, 200, 50), "Keybinds", type="keybinds", imgs='MenuButton'))
-            buttons.append(Button(game, (100, 200, 200, 50), "Resolution", type="resolution", imgs='MenuButton'))
-            buttons.append(Button(game, (100, 300, 200, 50), "Back", type="back", imgs='MenuButton'))
+            buttons.append(Button(game, (100, 200, 200, 50), "Audio", type="audio", imgs='MenuButton'))
+            buttons.append(Button(game, (100, 300, 200, 50), "Video", type="video", imgs='MenuButton'))
+            buttons.append(Button(game, (100, 400, 200, 50), "Back", type="back", imgs='MenuButton'))
             return buttons
 
+        case 'Audio':
+            buttons.append(Button(game, (100, 200, 200, 50), "Music Volume", type="music_volume", imgs='MenuButton'))
+            buttons.append(Button(game, (100, 300, 200, 50), "SFX Volume", type="sfx_volume", imgs='MenuButton'))
+            buttons.append(Button(game, (100, 400, 200, 50), "Back", type="back", imgs='MenuButton'))
+            return buttons
 
         case 'Keybinds':
             buttons_per_screen = game.screen_size[1] - 100
@@ -51,13 +43,12 @@ def get_buttons(game, state):
 
             for key in game.keybinds.keys():
                 buttons.append(Button(game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), key,
-                                           type="keybind", imgs='MenuButton'))
+                                      type="keybind", imgs='MenuButton'))
                 x += 250 if (iteration + 1) % max_buttons == 0 else 0
                 iteration = (iteration + 1) % max_buttons
             return buttons
 
-
-        case 'Resolution':
+        case 'Video':
             buttons_per_screen = game.screen_size[1] - 100
             max_buttons = buttons_per_screen // 100
             x = 100
@@ -66,66 +57,38 @@ def get_buttons(game, state):
             for resolution in game.resolutions:
                 buttons.append(
                     Button(game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), resolution,
-                           type="resolution", imgs='MenuButton'))
+                           type="video", imgs='MenuButton'))
                 x += 250 if (iteration + 1) % max_buttons == 0 else 0
                 iteration = (iteration + 1) % max_buttons
 
             buttons.append(
-                Button(game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), "Back", type="back", imgs='MenuButton'))
+                Button(game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), "Back", type="back",
+                       imgs='MenuButton'))
             return buttons
 
+def get_sliders(game, state):
+    sliders = []
+    print(state)
+    match state:
+        case 'Main Menu':
+            print("Menu Loaded")
+            return sliders
 
-class Menuu:
-    def __init__(self, game, menu_type):
-        self.buttons = []
-        self.type = menu_type
-        self.game = game
+        case 'Pause':
+            return sliders
 
-        self.transparent = pygame.Surface(self.game.screen_size)
-        self.transparent.fill((80, 190, 240))
-        self.transparent.set_alpha(128)
-        self.game.screen.blit(self.transparent, (0, 0))
+        case 'Options':
+            return sliders
 
-        if self.type == "Pause":
+        case 'Audio':
+            sliders.append(Slider(game, [100, 100, 200, 50], 0, 200, 100, type="master_volume", text="Master Volume", ))
+            sliders.append(Slider(game, [100, 150, 200, 50], 0, 200, 100, type="music_volume", text="Music Volume", ))
+            sliders.append(Slider(game, [100, 200, 200, 50], 0, 200, 100, type="sfx_volume", text="SFX Volume", ))
 
+            return sliders
 
-            self.game.screen.blit(pygame.transform.scale(self.game.outline, self.game.screen_size),
-                                  (0, 0))  # Displays Game Screen
-            self.game.screen.blit(self.transparent, (0, 0))
+        case 'Keybinds':
+            return sliders
 
-        if self.type == "Options":
-
-
-            self.game.screen.blit(pygame.transform.scale(self.game.outline, self.game.screen_size),
-                                  (0, 0))  # Displays Game Screen
-            self.game.screen.blit(self.transparent, (0, 0))
-
-
-
-
-
-    def update(self):
-        if self.type == "Pause":
-            self.game.screen.blit(pygame.transform.scale(self.game.outline, self.game.screen_size), (0, 0))
-            self.game.screen.blit(self.transparent, (0, 0))
-
-        if self.type == "Options":
-            self.game.screen.blit(pygame.transform.scale(self.game.outline, self.game.screen_size), (0, 0))
-            self.game.screen.blit(self.transparent, (0, 0))
-
-        if self.type == "Keybinds":
-            self.game.screen.blit(pygame.transform.scale(self.game.outline, self.game.screen_size), (0, 0))
-            self.game.screen.blit(self.transparent, (0, 0))
-
-        for button in self.game.buttons:
-            button.render(self.game.screen)
-
-
-
-        self.game.events()
-        menu_render(self.game)
-        self.game.clock.tick(60)
-
-
-
-
+        case 'Video':
+            return sliders

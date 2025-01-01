@@ -1,0 +1,3 @@
+# slider.py
+import pygame
+

@@ -1,11 +1,13 @@
+import random
+
 import pygame
 import json
 import sys
 sys.path.append('Scripts')
 
 NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]
-PHYSICS_TILES = {'grass', 'stone', 'snow', 'sand', 'cave', 'jungle'}
-AUTO_TILES = {'grass', 'stone', 'snow', 'sand', 'cave', 'jungle'}
+PHYSICS_TILES = {'grass', 'stone', 'snow', 'sand', 'cave', 'jungle', 'dark_grass'}
+AUTO_TILES = {'grass', 'stone', 'snow', 'sand', 'cave', 'jungle', 'dark_grass'}
 AUTO_TILES_MAP = {
     tuple(sorted([(1, 0), (0, 1)])): 0,
     tuple(sorted([(1, 0), (0, 1), (-1, 0)])): 1,
@@ -16,6 +18,19 @@ AUTO_TILES_MAP = {
     tuple(sorted([(1, 0), (0, -1)])): 6,
     tuple(sorted([(1, 0), (0, -1), (0, 1)])): 7,
     tuple(sorted([(1, 0), (-1, 0), (0, 1), (0, -1)])): 8
+}
+
+AUTO_TILE_GRASS = [
+    'grass',
+    'jungle'
+]
+
+FOREGROUND_TILES = {
+    'grass_blades',
+    'decor',
+    'misc',
+    'spawners'
+
 }
 
 COLLECTABLE_KEYS = {
@@ -97,11 +112,11 @@ class Tilemap:
         return rects
 
     def auto_tile(self):
-        for loc in self.tilemap:
+        for loc in list(self.tilemap.keys()):
             tile = self.tilemap[loc]
             # Check if the tile's position is on the grid
             if tile['pos'][0] % 1 == 0 and tile['pos'][1] % 1 == 0:
-                if 'tileable' in tile and tile['tileable'] == True:
+                if 'tileable' in tile and tile['tileable'] == True:  # Tile Main Tiles
                     neighbors = set()
                     for shift in [(1, 0), (-1, 0), (0, -1), (0, 1)]:
                         check_loc = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
@@ -110,7 +125,16 @@ class Tilemap:
                                 neighbors.add(shift)
                     neighbors = tuple(sorted(neighbors))
                     if tile['type'] in AUTO_TILES and neighbors in AUTO_TILES_MAP:
-                       tile['variant'] = AUTO_TILES_MAP[neighbors]
+                        tile['variant'] = AUTO_TILES_MAP[neighbors]
+
+                # Add grass blade above any grass tile with air above it
+                if 'tileable' in tile and tile['tileable'] == True:
+                    if tile['type'] in AUTO_TILE_GRASS:
+                        check_loc = str(tile['pos'][0]) + ';' + str(tile['pos'][1] - 1)
+                        if check_loc not in self.tilemap or self.tilemap[check_loc]['type'] in FOREGROUND_TILES:
+                            # add grass blades above as a random variant between 1 and 3
+                            self.tilemap[check_loc] = {'type': 'grass_blades', 'variant': random.choice([1, 1, 1, 1, 1, 2, 2, 3]), 'pos': [tile['pos'][0], tile['pos'][1] - 1]}
+
 
     def misc_tile_check(self, pos):
         tile_loc = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size))
@@ -124,6 +148,8 @@ class Tilemap:
 
     def render(self, surf, offset=(0, 0), collision=True, misc=False):
         # Calculate the visible area            #### 20 is the buffer and 40 is to add 20 to the other sides aswell
+        visible_area = pygame.Rect(0, 0, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+
         visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
 
         # Render offgrid tiles

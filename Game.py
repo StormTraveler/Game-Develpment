@@ -8,6 +8,7 @@ import sys
 import moderngl
 from array import array
 
+import pygame
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -18,9 +19,10 @@ from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
 from Scripts.Clouds import Clouds
 from Scripts.particle import Particle, Spark
-from Scripts.UI import UI, Button
+from Scripts.UI import UI, Button, Dialogue
 from Scripts.grass import *
 from Scripts.Menu import *
+
 
 # os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0" Makes it open in the top left
 logging.basicConfig(level=logging.INFO)
@@ -63,10 +65,12 @@ class Game:
         self.up = False
         self.down = False
         self.buttons = []
+        self.sliders = []
+        self.dragging = False
         self.button_selected = 0
         self.selected_keybind_button = None
         self.key_code = None
-        self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Resolution", "Inventory"]
+        self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Audio", "Video", "Inventory"]
         self.screenshake = 0
         self.music_volume = 0.5
         self.music = True
@@ -79,7 +83,7 @@ class Game:
 
         self.gm = GrassManager('data/images/grass', tile_size=16, stiffness=600, max_unique=5, place_range=[1, 1])
         self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
-        self.gt = 0
+        self.grass_time = 0
 
 
 
@@ -165,7 +169,9 @@ class Game:
             "spawners": load_images("tiles/spawners"),
             "misc": load_images("tiles/misc"),
             "collectables": load_images("items/collectables"),
-            "background": pygame.transform.scale(load_image("background"), self.zoom_size),
+            "jungle": load_images("tiles/jungle"),
+            "dark_grass": load_images("tiles/dark_grass"),
+            "background": pygame.transform.scale(load_image("bgg"), self.zoom_size),
             "clouds": load_images("clouds"),
             "keys": load_keys("keys/pc/dark"),
 
@@ -193,8 +199,8 @@ class Game:
 
             "health": load_image("UI/player_health_pip"),
             "coin": load_image("UI/coin"),
-            "MenuButton": load_image_transparent("UI/MenuButton", (200, 50)),
-            "MenuButtonSelected": load_image_transparent("UI/MenuButtonSelected", (200, 50)),
+            "MenuButton": load_image("UI/MenuButton"),
+            "MenuButtonSelected": load_image("UI/MenuButtonSelected"),
             "DialogueBox": load_image_transparent("UI/DialogueBox", (200, 50)),
         }
 
@@ -305,12 +311,14 @@ class Game:
 
     def handle_UI(self):
         for ui in self.UIs:
-            if ui.img == self.assets["health"]:
+            if ui.type == 'Health':
                 ui.update(self.full_display, leng=[self.player.health, 1])
             else:
                 ui.update(self.full_display)
 
             ui.render(self.full_display)
+
+
         if self.debugging:
             fps = self.clock.get_fps()
             fps_text = pygame.font.Font(None, 20).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
@@ -339,7 +347,7 @@ class Game:
 
     def handle_dialogues(self):
         for d in self.dialogues:
-            d.update(self.full_display)
+            d.update()
             d.render(self.full_display)
 
     def handle_clouds(self):
@@ -375,13 +383,17 @@ class Game:
                       2 + random.random()))
 
     def handle_grass(self):
-        rot_function = lambda x, y: int(math.sin(self.gt / 60 + x / 100) * 15)
-        self.gt += self.dt * 100
+        self.t = time.time() - self.start
+        phase_shift = self.t * 2
+        rot_function = lambda x, y: min(int((math.sin(phase_shift - x*16 / 100) * 20)), 12 - (x % 2))
+
         return rot_function
 
-    def render_screen(self, menu=False):
 
+    def render_screen(self, menu=False):
         if menu:
+            for slider in self.sliders:
+                slider.render(self.full_display)
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), (0, 0))
             self.screen.blit(self.full_display, [0, 0])
 
@@ -398,6 +410,7 @@ class Game:
             self.outline.blit(self.display, (0, 0))
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(self.full_display, [0, 0])
+
 
 
             pygame.display.flip()
@@ -425,13 +438,13 @@ class Game:
         last_frame_time = time.time()
 
         if self.state == "Game":
-            self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64]))
-            self.UIs.append(UI(self, pos=[0, 64], img=self.assets["coin"], size=[64, 64], leng=(1, 1)))
+            self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64], type="Health"))
+            self.UIs.append(UI(self, pos=[0, 64], img=self.assets["coin"], size=[64, 64], leng=(1, 1), type="Coin"))
 
-            # self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to the game I still have not named. "
-            #                                                           f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. To dash press {self.key('Dash')} or {self.key('Dash', 1)}. "
-            #                               f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
-            #                               text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
+            self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to Horizon's Embrace. "
+            f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. To dash press {self.key('Dash')} or {self.key('Dash', 1)}. "
+            f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
+            text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
 
 
         while self.state == 'Game':
@@ -462,7 +475,6 @@ class Game:
                     pos = (rect.x + random.random() * rect.width, rect.y + random.random() * rect.height)
                     self.particles.append(
                         Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
-
 
 
 
@@ -521,6 +533,7 @@ class Game:
 
             self.events()
             self.handle_UI()
+            self.handle_dialogues()
 
 
             self.render_screen()
@@ -533,13 +546,22 @@ class Game:
             if self.state == "Main Menu":
                 self.load_level(0)
                 self.buttons = get_buttons(self, state)
+                self.sliders = get_sliders(self, state) or []
+                print('intializing main menu')
             else:
                 self.buttons = get_buttons(self, state)
+                self.sliders = get_sliders(self, state) or []
+
 
             while self.state == state:
                 if self.state != "Main Menu":
                     self.full_display.fill((0, 0, 0, 0))  # Clear the full display
 
+
+                    # Handle Camera
+                    self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
+                    self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) - 20
+                    self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
                     #   Handle Basic Clockrate and Displays
                     self.clock.tick(self.framerate)
@@ -549,11 +571,16 @@ class Game:
                     for button in self.buttons:
                         button.render(self.full_display)
 
-                    print(len(self.buttons))
+                    # print(len(self.buttons))
 
                     self.render_screen(menu=True)
 
                 else:  # Handle Menu Animation
+                    if self.level > 0:
+                        self.load_level(0)
+                        self.level = 0
+
+
                     self.display.fill((0, 0, 0, 0))  # Clear the display
                     self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
                     self.movement[1] = True
@@ -564,6 +591,8 @@ class Game:
                     self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
                     self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) - 20
                     self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+                    # print(self.render_scroll)
+                    # print(self.player.rect().centerx, self.display.get_width() / 2, self.scroll[0])
 
 
                     # Handle Leaves
@@ -654,6 +683,9 @@ class Game:
                     if self.ADMIN and event.key == pygame.K_KP0:
                         self.level += 1
                         self.load_level(self.level)
+                    # Swap admin if tilde is pressed
+                    if event.key == pygame.K_BACKQUOTE:
+                        self.ADMIN = not self.ADMIN
 
                 if event.type == pygame.KEYUP:
                     if event.key in self.keybinds["Move Left"]:
@@ -693,7 +725,11 @@ class Game:
                             self.selected_keybind_button = button
                             print(f"Selected keybind for {self.selected_keybind_button.text}")
 
-            if self.state in ['Main Menu', 'Pause', 'Options', 'Resolution']:
+
+            if self.state in ['Main Menu', 'Pause', 'Options', 'Video', 'Audio']:
+                for slider in self.sliders:  # Use a different variable name in the loop
+                    slider.handle_event(event)
+
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE:
                         self.state = 'Game'
@@ -725,6 +761,9 @@ class Game:
                         if self.state == "Quit":
                             pygame.quit()
                             sys.exit()
+
+
+
 
 
 import cProfile

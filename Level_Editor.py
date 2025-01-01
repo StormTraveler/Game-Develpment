@@ -10,25 +10,26 @@ import os
 print(os.getcwd())
 
 
-MAP_TO_EDIT = "data/maps/1.json"
+MAP_TO_EDIT = "data/maps/5.json"
 class Editor:
     def __init__(self):
-        self.game_size = [640, 480]
-        self.render_scale = 1.25
+        self.game_size = [1920, 1080]
+        self.screen_size = [1920, 1080]
+        self.render_scale = 1
         pygame.init()
-        self.screen = pygame.display.set_mode([800, 600])
+        self.screen = pygame.display.set_mode(self.screen_size)
         self.debugging = False
 
-        self.zoom_size = [1280, 1000]
+        self.zoom_size = self.screen_size
 
-        self.display = pygame.Surface((self.game_size[0], self.game_size[1]))   #   320, 240
+        self.display = pygame.Surface((self.game_size[0], self.game_size[1]))  # 320, 240
         pygame.display.set_caption("Level Editor")
 
         self.clock = pygame.time.Clock()
         self.running = True
         self.movement = [False, False, False, False]
 
-        self.background = load_image("background")
+        self.background = load_image("bg")
         self.assets = {
             "decor": load_images("tiles/decor"),
             "grass": load_images("tiles/grass"),
@@ -43,25 +44,17 @@ class Editor:
             "jungle": load_images("tiles/jungle"),
             "keys": load_keys("keys/pc/dark"),
             "grass_blades": load_images("tiles/grass_blades"),
-
-
-
-
+            "dark_grass": load_images("tiles/dark_grass"),
+            "foliage": load_images("foliage"),
         }
-
-        print(list(self.assets))
-
 
         self.collectables = {
             "Dash": False,
             "Double Jump": False,
-            "Sword Charge": False,  #   Spur ability
+            "Sword Charge": False,  # Spur ability
             "Wall Jump": False,
             "Health": False,
-
         }
-
-
 
         self.tilemap = Tilemap(self, tile_size=16, editor=True)
         try:
@@ -85,7 +78,7 @@ class Editor:
     def run(self):
         while self.running:
             self.display.fill((0, 0, 0))
-            self.display.blit(pygame.transform.scale(self.background, [800 / self.render_scale, 600 / self.render_scale]), (0, 0))
+            self.display.blit(pygame.transform.scale(self.background, [self.screen_size[0] / self.render_scale, self.screen_size[1] / self.render_scale]), (0, 0))
 
             self.scroll[0] += (self.movement[1] - self.movement[0]) * 5 / self.render_scale
             self.scroll[1] += (self.movement[3] - self.movement[2]) * 5 / self.render_scale
@@ -127,15 +120,13 @@ class Editor:
                 self.scroll[1] -= dy
                 self.starting_pos = mpos
 
-
-
             self.clock.tick(60)
             self.events()
             self.update()
 
             self.display.blit(current_tile_img, (5, 5))
 
-            self.screen.blit(pygame.transform.scale(self.display, [800, 600]), [0, 0])
+            self.screen.blit(pygame.transform.scale(self.display, self.screen_size), [0, 0])
 
             pygame.display.update()
 
@@ -163,8 +154,6 @@ class Editor:
         new_center = [self.scroll[i] + self.game_size[i] / 2 for i in range(2)]
         self.scroll = [self.scroll[i] + old_center[i] - new_center[i] for i in range(2)]
 
-
-
     def events(self):
         mpos = pygame.mouse.get_pos()
         mpos = (mpos[0] / self.render_scale, mpos[1] / self.render_scale)
@@ -177,12 +166,21 @@ class Editor:
                 if event.button == 1:
                     self.clicking = True
                     if not self.ongrid:
-                        self.tilemap.offgrid_tiles.append({'type': self.tile_list[self.tile_group], 'variant': self.tile_variant, 'pos': (mpos[0] + self.scroll[0], mpos[1] + self.scroll[1])})
+                        self.tilemap.offgrid_tiles.append(
+                            {'type': self.tile_list[self.tile_group], 'variant': self.tile_variant,
+                             'pos': (mpos[0] + self.scroll[0], mpos[1] + self.scroll[1])})
                 if event.button == 3:
                     self.right_clicking = True
 
                 if event.button == 2:
                     self.starting_pos = mpos
+                    tile_pos = (int((mpos[0] + self.scroll[0]) // self.tilemap.tile_size),
+                                int((mpos[1] + self.scroll[1]) // self.tilemap.tile_size))
+                    tile_key = f"{tile_pos[0]};{tile_pos[1]}"
+                    if tile_key in self.tilemap.tilemap:
+                        tile = self.tilemap.tilemap[tile_key]
+                        self.tile_group = self.tile_list.index(tile['type'])
+                        self.tile_variant = tile['variant']
 
                 if self.shift:
                     if event.button == 4:
@@ -201,10 +199,6 @@ class Editor:
                         self.tile_variant = (self.tile_variant + 1) % len(self.assets[self.tile_list[self.tile_group]])
                     if event.button == 5:
                         self.tile_variant = (self.tile_variant - 1) % len(self.assets[self.tile_list[self.tile_group]])
-
-
-
-
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_a:
@@ -233,7 +227,6 @@ class Editor:
                 if event.key == pygame.K_MINUS:
                     self.zoom_out()
 
-
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_a:
                     self.movement[0] = False
@@ -248,7 +241,7 @@ class Editor:
                 if event.key == pygame.K_LALT:
                     self.alt = False
                 if event.key == pygame.K_LCTRL:
-                    self.tileable =  True
+                    self.tileable = True
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     self.clicking = False
