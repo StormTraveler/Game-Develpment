@@ -1,14 +1,10 @@
-#!/usr/bin/env pypy
-import random
-import math
 import logging
 import ctypes
-import time
 import sys
-import moderngl
 from array import array
-
+#!/usr/bin/env pypy
 import pygame
+
 
 SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
 print(SF)
@@ -786,19 +782,19 @@ class Game:
                             sys.exit()
 
 
-import cProfile
-import pstats
+#import cProfile
+#import pstats
 
 if __name__ == "__main__":
     game = Game()
 
     while True:
-        profiler = cProfile.Profile()
-        profiler.enable()
+        #profiler = cProfile.Profile()
+        #profiler.enable()
 
         game.run()
 
-        profiler.disable()
-        stats = pstats.Stats(profiler)
-        stats.sort_stats('time')  # Sort by cumulative time
-        stats.print_stats()
+        #profiler.disable()
+        #stats = pstats.Stats(profiler)
+        #stats.sort_stats('time')  # Sort by cumulative time
+        #stats.print_stats()
