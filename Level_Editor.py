@@ -10,7 +10,7 @@ import os
 print(os.getcwd())
 
 
-MAP_TO_EDIT = "data/maps/5.json"
+MAP_TO_EDIT = "data/maps/4.json"
 class Editor:
     def __init__(self):
         self.game_size = [1920, 1080]
@@ -29,7 +29,7 @@ class Editor:
         self.running = True
         self.movement = [False, False, False, False]
 
-        self.background = load_image("bg")
+        self.background = load_image("backgrounds/background")
         self.assets = {
             "decor": load_images("tiles/decor"),
             "grass": load_images("tiles/grass"),

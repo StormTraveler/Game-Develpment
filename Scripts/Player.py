@@ -20,6 +20,7 @@ class Player(PhysicsEntity):
         self.air_time = 0
         self.jumps = 2
         self.dashing = [0, 0]
+        self.charging = 0
         self.attacking = 0
         self.death = 0
         self.max_health = max_health
@@ -28,7 +29,10 @@ class Player(PhysicsEntity):
         self.inventory = [0, 1, 2, 3, 4, 5, 6, 7,
                           8, 9, 10, 11, 12, 13, 14, 15]
         self.jump_cooldown = 0
+        self.double_jumped = 0
         self.coins = 0
+        self.particles = []
+        self.iframes = 0
 
     def draw_hitbox(self):
         if self.dashing[0] == 0 and self.dashing[1] == 0:
@@ -50,6 +54,12 @@ class Player(PhysicsEntity):
 
         if self.jump_cooldown > 0:
             self.jump_cooldown -= 1
+        if self.charging > 0:
+            self.charging += 1
+        self.iframes = max(0, self.iframes - 1)
+
+        self.handle_charging_particles()
+
 
         if movement[0] != 0:
             if abs(self.dashing[0]) > 30:
@@ -143,36 +153,74 @@ class Player(PhysicsEntity):
 
         for slash in self.slashes:
             slash.update(self.game.tilemap)
-            slash.flip = self.flip
 
-
-            if self.flip:
-                slash.pos = (self.pos[0] - 12, self.pos[1])
-            elif not self.flip:
-                slash.pos = (self.pos[0] + 12, self.pos[1])
-
-            if self.game.up and self.game.down:     # Replace with or for vertical slash
-                pass
+            if slash.powerful:
+                slash.render(self.game.display, offset=self.game.render_scroll)
+                print("rendering powerful slash at", slash.pos)
             else:
+                slash.flip = self.flip
                 if self.flip:
-                    slash.render(self.game.display, pos=(self.pos[0] - 12, self.pos[1]), offset=self.game.render_scroll)
-                else:
-                    slash.render(self.game.display, pos=(self.pos[0] + 12, self.pos[1]), offset=self.game.render_scroll)
+                    slash.pos = (self.pos[0] - 12, self.pos[1])
+                    slash.render(self.game.display, offset=self.game.render_scroll)
 
-                if slash.done:
-                    self.slashes.remove(slash)
+                elif not self.flip:
+                    slash.pos = (self.pos[0] + 12, self.pos[1])
+                    slash.render(self.game.display, offset=self.game.render_scroll)
+
+            if slash.done:
+                self.slashes.remove(slash)
 
     # Main Player Render Function (Overriden)
     def render(self, surf, offset=(0, 0)):
+        if self.iframes > 0:
+            if (self.iframes // 4) % 4 == 0:  # Group frames in pairs of 2
+                return
+        # First render the charging particles
+        particles_to_remove = []
+        for particle in self.particles:
+            if particle.type == 'charge_particle':
+                particle.pos[0] += particle.velocity[0]
+                particle.pos[1] += particle.velocity[1]
+
+                # Calculate the offset based on movement speed
+                base_offset = 8
+                movement_scale = self.scale_speed if self.scale_speed > 0.3 else 0
+                x_adjust = base_offset * movement_scale * (1 if self.flip else -1)
+
+                # Calculate distance to the offset-adjusted player position
+                player_center_x = self.pos[0] + self.rect().width / 2 + x_adjust
+                player_center_y = self.pos[1] + self.rect().height / 2
+
+                dx = player_center_x - particle.pos[0]
+                dy = player_center_y - particle.pos[1]
+                dist = math.sqrt(dx * dx + dy * dy)
+
+                # Scale the distance threshold based on movement speed
+                base_threshold = 3
+                speed_multiplier = max(1, self.scale_speed * 5)  # Increase threshold when moving
+                removal_threshold = base_threshold * speed_multiplier
+
+                if dist < removal_threshold or particle.age > 30:
+                    particles_to_remove.append(particle)
+
+                particle.update()
+                render_offset = (offset[0] + x_adjust, offset[1])
+                particle.render(surf, offset=render_offset)
+
+        # Then render the player sprite on top if not in long dash
         if abs(self.dashing[0]) <= 50:
             super().render(surf, offset=offset)
 
+        # Clean up any particles that need to be removed
+        for particle in particles_to_remove:
+            self.particles.remove(particle)
 
 
     # Main Player Jump Function
     def jump(self, strength=1):
-        if self.jump_cooldown > 0:
+        if self.jump_cooldown > 0 and self.double_jumped > 0:
             return False
+
 
         elif self.wall_slide:
             if self.flip and self.last_movement[0] < 0:
@@ -231,16 +279,71 @@ class Player(PhysicsEntity):
                         self.dashing[0] = 60
                         logging.info("Dash right")
 
-    def attack(self):
-        if not self.attacking:
+    def attack(self, powerful=False):
+        if powerful:
             self.attacking = 25
-            self.slashes.append(Entity(self.game, "slash", self.rect().center, size=(8, 16), leeway=(0, 0)))
+            self.slashes.append(Entity(self.game, "slash", (self.rect().x, self.rect().y), size=(8, 16), leeway=(0, 0), velocity=[-3 if self.flip else 3, 0], powerful=True, lifetime=5))
+            print("Powerful Attack with velocity of", self.velocity)
+        elif not self.attacking:
+            self.attacking = 25
+            self.slashes.append(Entity(self.game, "slash", self.rect().center, size=(8, 16),  leeway=(0, 0)))
+            print("Normal Attack")
 
+    def handle_charging_particles(self):
+        if 20 <= self.charging < 70:
+            if self.charging == 20:
+                self.game.sfx['charging'].play()
+            for i in range(3):
+                spawn_radius = 30
+                angle = random.random() * math.pi * 2
+                spawn_x = self.pos[0] + self.rect().width / 2 + math.cos(angle) * spawn_radius
+                spawn_y = self.pos[1] + self.rect().height / 2 + math.sin(angle) * spawn_radius
+
+                dx = (self.pos[0] + self.rect().width / 2) - spawn_x
+                dy = (self.pos[1] + self.rect().height / 2) - spawn_y
+                dist = math.sqrt(dx * dx + dy * dy)
+                speed = 0.75
+                pvelocity = [dx / dist * speed, dy / dist * speed]
+
+                self.particles.append(
+                    Particle(self.game, 'charge_particle', [spawn_x, spawn_y],
+                             velocity=pvelocity, frame=random.randint(3, 3)))
+        elif self.charging >= 70:
+            if self.charging == 70:
+                self.game.sfx['charging'].stop()
+                self.game.sfx['charged'].play()
+            self.particles = []
+            #create sparks for powerful attack
+            if self.charging % 3 == 0: #    3 is the number of frames between each spark
+                # make sure the angle is only between 0 and 180 degrees
+                angle = random.random() * math.pi
+                speed = random.random() * 0.2 + 0.2
+                pvelocity = [math.cos(angle) * speed,
+                             math.sin(angle) * speed]
+                self.game.particles.append(
+                    Particle(self.game, 'charge_particle', self.rect().center, velocity=pvelocity, frame=random.randint(0, 7)))
 
 
     # Simple Heatlh/Damage Function
     def hurt(self, damage=1):
-        logging.info("Ouch! I got hit for " + str(damage) + " damage!")
+        #TODO: Add dodge sound effect
         self.game.sfx['hit'].play()
-        self.health -= 1
+        if self.iframes <= 0:
+            logging.info("Ouch! I got hit for " + str(damage) + " damage!")
+            self.health -= 1
+            self.iframes = 90
+
+    def start_charging(self):
+        self.charging = 1
+
+
+    def stop_charging(self):
+        self.particles = []
+        self.game.sfx['charging'].stop()
+        self.game.sfx['charged'].stop()
+        if self.charging >= 70:
+            self.attack(powerful=True)
+        print(self.charging)
+        self.charging = 0
+
 

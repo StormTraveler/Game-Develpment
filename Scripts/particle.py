@@ -1,7 +1,7 @@
 import math
 import pygame
 class Particle:
-    def __init__(self, game, p_type, pos, velocity=(0, 0), frame=0):
+    def __init__(self, game, p_type, pos, velocity=(0, 0), frame=0, age=0):
         self.game = game
         self.type = p_type
         self.pos = list(pos)
@@ -9,9 +9,11 @@ class Particle:
         self.animation = self.game.assets['particle/' + self.type].copy()
         self.animation.frame = frame
         self.rect = pygame.Rect(self.pos[0], self.pos[1], self.animation.img().get_width(), self.animation.img().get_height())
+        self.age = age
 
     def update(self):
         kill = False
+        self.age += 1
         if self.animation.done:
             kill = True
 

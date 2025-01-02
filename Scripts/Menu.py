@@ -81,9 +81,9 @@ def get_sliders(game, state):
             return sliders
 
         case 'Audio':
-            sliders.append(Slider(game, [100, 100, 200, 50], 0, 200, 100, type="master_volume", text="Master Volume", ))
-            sliders.append(Slider(game, [100, 150, 200, 50], 0, 200, 100, type="music_volume", text="Music Volume", ))
-            sliders.append(Slider(game, [100, 200, 200, 50], 0, 200, 100, type="sfx_volume", text="SFX Volume", ))
+            sliders.append(Slider(game, [100, 100, 200, 50], 0, 2, game.master_volume, type="master_volume", text="Master Volume", ))
+            sliders.append(Slider(game, [100, 150, 200, 50], 0, 2, game.music_volume, type="music_volume", text="Music Volume", ))
+            sliders.append(Slider(game, [100, 200, 200, 50], 0, 2, game.sfx_volume, type="sfx_volume", text="SFX Volume", ))
 
             return sliders
 

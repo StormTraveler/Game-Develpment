@@ -5,18 +5,20 @@ auto-py-to-exe
 
 
 TODO:
-make the sliders work
+Fix Render order {The player outline is rendering under the terrain}
+Create a known bug list
+try to fix the dialogue lag - Done?
+
+Move the grass from side to side when walking
+make the grass faster, so it does not idle
 save / load
-level select
-background
-stars
 moon/sun
-
-
 Remake the Main Menu
 Fix Resolution Menu
 
-
+TODO EASTER EGGS:
+Add level -1
+drag moon around
 
 
 
@@ -32,21 +34,12 @@ more enemies
 more weapons
 settings icon in the top right of the screen
 
-TODO BIG FEATURES:
-inventory system
-money system
-save / load
-
-
-
-
-
 
 TODO POLISH:
+fix the charging particles
 wait a few seconds after death before resetting
 polish resolution menu
 Remake the Main Menu
-Move the grass from side to side when walking
 reset player dash and movement and velocity when loading level
 Make buttons slide down onto screen for pause screen
 Make buttons slide down onto screen for main menu
@@ -57,6 +50,8 @@ Fix Resolutions
 resolution menu
 keybind menu
 collectibles
+background
+stars
 
 TODO TIMESCALE:
 FIX TIME SCALE
@@ -70,19 +65,19 @@ add it to
 
 
 
-
-
 TODO ENEMIES:
 Enemy that shoots projectile at range
 Enemy that has melee attack
 
 TODO FIX:
-dashing too far/dashing into projectiles
-prevent missed input for jumping on wall dash
-prevent missed input for jumping on wall regular jump
+prevent missed input for jumping on wall dash (input buffering)
+prevent missed input for jumping on wall regular jump (input buffering)
 
 
 TODO DONE:
+add sword charge ability
+make the sliders work
+dashing too far/dashing into projectiles
 fix menus
 bullets go behind tiles
 deflect bullets and can kill
@@ -104,18 +99,16 @@ small dash sideways when not moving
 Options Menu
 swap X and C
 Split up Enemies into their own file
-
 Sandy Desert
 Snowy Mountains
 Grassy Plains
 Cave
 Rain Forest
 Volcanic Wasteland?
-
+Omnidirectional dash
 
 
 TODO SCRAPPED:
 Climb walls
-Omnidirectional dash
-downwards dash
 C interact Key
+level select

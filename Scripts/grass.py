@@ -132,7 +132,7 @@ class GrassManager:
             self.formats[format_id]['data'].append((tile_id, data))
 
     # attempt to place a new grass tile
-    def place_tile(self, location, density, grass_options=(0, 1, 2, 3, 4)):
+    def place_tile(self, location, density, grass_options=(0, 1, 2, 3, 4), texture='bright'):
         # ignore if a tile was already placed in this location
         if tuple(location) not in self.grass_tiles:
             self.grass_tiles[tuple(location)] = GrassTile(self.tile_size, (location[0], location[1]), density, grass_options, self.ga, self)

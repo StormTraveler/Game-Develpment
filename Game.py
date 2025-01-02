@@ -17,16 +17,14 @@ from Scripts.Enemy import Enemy
 from Scripts.Player import Player
 from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
-from Scripts.Clouds import Clouds
+from Scripts.Celestials import CloudManager, StarManager
 from Scripts.particle import Particle, Spark
 from Scripts.UI import UI, Button, Dialogue
 from Scripts.grass import *
 from Scripts.Menu import *
 
-
 # os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0" Makes it open in the top left
 logging.basicConfig(level=logging.INFO)
-
 
 
 class Game:
@@ -41,8 +39,9 @@ class Game:
         self.sparks = []
         self.render_scroll = None
         pygame.init()
+        pygame.mixer.init()
         pygame.event.set_allowed([pygame.QUIT, pygame.KEYDOWN, pygame.KEYUP])
-        #self.screen_size = [1920, 1080]
+        # self.screen_size = [1920, 1080]
         self.resolutions = [(640, 360), (854, 480), (960, 540),
                             (1024, 576), (1280, 720), (1366, 768),
                             (1600, 900), (1920, 1080)]
@@ -72,20 +71,22 @@ class Game:
         self.key_code = None
         self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Audio", "Video", "Inventory"]
         self.screenshake = 0
-        self.music_volume = 0.5
+        self.master_volume = 1.0
+        self.sfx_volume = 1.0
+        self.music_volume = 1
         self.music = True
         self.clouds_enabled = True
-        self.ADMIN = True
+        self.stars_enabled = True
+        self.ADMIN = False
         self.UIs = []
         self.dialogues = []
         self.framerate = 60
         self.start = time.time()
 
-        self.gm = GrassManager('data/images/grass', tile_size=16, stiffness=600, max_unique=5, place_range=[1, 1])
+        self.gm = GrassManager('data/images/grass/medium_dark', tile_size=16, stiffness=600, max_unique=5,
+                               place_range=[1, 1])
         self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
         self.grass_time = 0
-
-
 
         self.ctx = moderngl.create_context()
         self.quad_buffer = self.ctx.buffer(data=array('f', [
@@ -130,7 +131,6 @@ class Game:
                 "Double Jump": True,
                 "Wall Climb": True,
                 "Sword Charge": True,  # Spur ability
-                "Wall Jump": True,
                 "Health": True,
             }
             # self.music = False
@@ -140,7 +140,6 @@ class Game:
                 "Double Jump": False,
                 "Wall Climb": False,
                 "Sword Charge": False,  # Spur ability
-                "Wall Jump": False,
                 "Health": False,
             }
 
@@ -166,13 +165,16 @@ class Game:
             "large_decor": load_images("tiles/large_decor"),
             "grass_blades": load_images("tiles/grass_blades"),
             "stone": load_images("tiles/stone"),
+            "cave": load_images("tiles/cave"),
             "spawners": load_images("tiles/spawners"),
             "misc": load_images("tiles/misc"),
             "collectables": load_images("items/collectables"),
             "jungle": load_images("tiles/jungle"),
             "dark_grass": load_images("tiles/dark_grass"),
-            "background": pygame.transform.scale(load_image("bgg"), self.zoom_size),
-            "clouds": load_images("clouds"),
+            "background": pygame.transform.scale(load_image("backgrounds/background"), self.zoom_size),
+            "clouds": load_images("celestials/clouds"),
+            "stars": load_images("celestials/stars"),
+            "foliage": load_images("foliage"),
             "keys": load_keys("keys/pc/dark"),
 
             "player/idle": Animation(load_images("entities/player/idle"), 6),
@@ -189,13 +191,14 @@ class Game:
 
             "particle/leaf": Animation(load_images("particles/leaf"), 20, loop=False),
             "particle/particle": Animation(load_images("particles/particle"), 6, loop=False),
+            "particle/charge_particle": Animation(load_images("particles/charge_particle"), 6, loop=False),
             "enemy/idle": Animation(load_images("entities/enemy/idle"), 6),
             "enemy/run": Animation(load_images("entities/enemy/run"), 4),
             "slash/idle": Animation(load_images("particles/slash"), 1, loop=False),
             "gun": load_image("gun"),
             "bullet": load_image("bullet"),
             "ButtonSelected": pygame.image.load("data/images/ButtonSelect.png").convert_alpha(),
-            "MenuBackground": load_image("MenuBackground"),
+            "MenuBackground": load_image("backgrounds/MenuBackground"),
 
             "health": load_image("UI/player_health_pip"),
             "coin": load_image("UI/coin"),
@@ -210,13 +213,17 @@ class Game:
             "hit": pygame.mixer.Sound("data/sfx/hit.wav"),
             "shoot": pygame.mixer.Sound("data/sfx/shoot.wav"),
             "ambience": pygame.mixer.Sound("data/sfx/ambience.wav"),
+            "charging": pygame.mixer.Sound("data/sfx/charging.wav"),
+            "charged": pygame.mixer.Sound("data/sfx/charged.wav"),
         }
 
-        self.sfx["jump"].set_volume(0.3)
-        self.sfx["dash"].set_volume(0.2)
-        self.sfx["hit"].set_volume(0.5)
-        self.sfx["shoot"].set_volume(0.2)
-        self.sfx["ambience"].set_volume(0.3)
+        self.sfx["jump"].set_volume(0.3 * self.sfx_volume)
+        self.sfx["dash"].set_volume(0.2 * self.sfx_volume)
+        self.sfx["hit"].set_volume(0.5 * self.sfx_volume)
+        self.sfx["shoot"].set_volume(0.2 * self.sfx_volume)
+        self.sfx["ambience"].set_volume(0.3 * self.sfx_volume)
+        self.sfx["charging"].set_volume(0.5 * self.sfx_volume)
+        self.sfx["charged"].set_volume(0.5 * self.sfx_volume)
 
         pygame.mixer.music.load("data/music.wav")
 
@@ -226,13 +233,15 @@ class Game:
 
         #   Handle Map Initializing
         self.level = 0
-        self.max_level = 0
+        self.max_level = -1
         for f in os.scandir("data/maps"):
             if f.is_file():
                 self.max_level += 1
         self.load_level(self.level)
         if self.clouds_enabled:
-            self.clouds = Clouds(self.assets['clouds'], count=6)
+            self.cloud_manager = CloudManager(self.assets['clouds'], count=6)
+        if self.stars_enabled:
+            self.star_manager = StarManager(self.assets['stars'], count=8)
 
         logging.info("Max Level:" + str(self.max_level))
 
@@ -285,10 +294,23 @@ class Game:
     def handle_music(self):
         if self.music:
             self.sfx['ambience'].play(-1)
-            pygame.mixer.music.set_volume(self.music_volume)
+            pygame.mixer.music.set_volume(0.5 * self.music_volume)
             pygame.mixer.music.play(-1)
 
         logging.info("state: " + str(self.state))
+
+    def update_volumes(self):
+        # Apply master volume to all sound effects
+        self.sfx["jump"].set_volume(0.3 * self.sfx_volume * self.master_volume)
+        self.sfx["dash"].set_volume(0.2 * self.sfx_volume * self.master_volume)
+        self.sfx["hit"].set_volume(0.5 * self.sfx_volume * self.master_volume)
+        self.sfx["shoot"].set_volume(0.2 * self.sfx_volume * self.master_volume)
+        self.sfx["ambience"].set_volume(0.3 * self.sfx_volume * self.master_volume)
+        self.sfx["charged"].set_volume(0.5 * self.sfx_volume * self.master_volume)
+        self.sfx["charging"].set_volume(0.5 * self.sfx_volume * self.master_volume)
+
+        # Apply master volume to music
+        pygame.mixer.music.set_volume(0.5 * self.music_volume * self.master_volume)
 
     def handle_player(self):
         if self.player.health <= 0:
@@ -318,11 +340,18 @@ class Game:
 
             ui.render(self.full_display)
 
+        fps = self.clock.get_fps()
+        fps_text = pygame.font.Font(None, 20).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
+        self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
+        #if self.debugging:
 
-        if self.debugging:
-            fps = self.clock.get_fps()
-            fps_text = pygame.font.Font(None, 20).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
-            self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
+
+            # master_volume_text = pygame.font.Font(None, 20).render(f"Master Volume: {self.master_volume:.1f}", True, (255, 255, 255))
+            # self.display.blit(master_volume_text, (0, 0))
+            # music_volume_text = pygame.font.Font(None, 20).render(f"Music Volume: {self.music_volume:.1f}", True, (255, 255, 255))
+            # self.display.blit(music_volume_text, (0, 30))
+            # sfx_volume_text = pygame.font.Font(None, 20).render(f"SFX Volume: {self.sfx_volume:.1f}", True, (255, 255, 255))
+            # self.display.blit(sfx_volume_text, (0, 60))
 
             # x = pygame.font.Font(None, 20).render(f"X: {round(self.player.pos[0], 2)}", True, (255, 255, 255))
             # self.display.blit(x, (0, 50))
@@ -352,8 +381,16 @@ class Game:
 
     def handle_clouds(self):
         if self.clouds_enabled:
-            self.clouds.update()
-            self.clouds.render(self.outline, offset=self.render_scroll, mod=True)
+            self.cloud_manager.update()
+            self.cloud_manager.render(self.outline, offset=self.render_scroll, mod=True)
+
+    def handle_stars(self):
+        if self.stars_enabled:
+            self.star_manager.render(self.outline, offset=self.render_scroll, mod=True)
+
+    def handle_celestials(self):
+        self.handle_stars()
+        self.handle_clouds()
 
     def handle_transition_graphics(self):
         if self.transition:
@@ -376,19 +413,17 @@ class Game:
 
     def create_sparks(self, x, y, flipped):
         for i in range(4):
-
-
             self.sparks.append(
                 Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
                       2 + random.random()))
 
     def handle_grass(self):
+        # ooga booga do some magic, make grass blow in the wind
         self.t = time.time() - self.start
         phase_shift = self.t * 2
-        rot_function = lambda x, y: min(int((math.sin(phase_shift - x*16 / 100) * 20)), 12 - (x % 2))
-
+        rot_function = lambda x, y: min(int((math.sin(phase_shift - x * 16 / 180) * 20)), 140 - (x % 2))
+        # Honestly I have no idea what is going on here ^.^ but it works???
         return rot_function
-
 
     def render_screen(self, menu=False):
         if menu:
@@ -403,7 +438,6 @@ class Game:
             self.program['tex'] = 0
             self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
 
-
             frame_tex.release()
 
         else:
@@ -411,17 +445,13 @@ class Game:
             self.screen.blit(pygame.transform.scale(self.outline, self.screen_size), self.screenshake_offset)
             self.screen.blit(self.full_display, [0, 0])
 
-
-
             pygame.display.flip()
             frame_tex = self.surf_to_texture(self.screen)
             frame_tex.use(0)
             self.program['tex'] = 0
             self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
 
-
             frame_tex.release()
-
 
     def surf_to_texture(self, surf):
         tex = self.ctx.texture(surf.get_size(), 4)
@@ -430,22 +460,23 @@ class Game:
         tex.write(surf.get_view('1'))
 
         return tex
-    def run(self):
 
+    def run(self):
 
         self.handle_music()
         self.dt = time.time() - self.start
         last_frame_time = time.time()
 
         if self.state == "Game":
-            self.UIs.append(UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64], type="Health"))
+            self.UIs.append(
+                UI(self, img=self.assets["health"], leng=[self.player.health, 1], size=[64, 64], type="Health"))
             self.UIs.append(UI(self, pos=[0, 64], img=self.assets["coin"], size=[64, 64], leng=(1, 1), type="Coin"))
 
-            self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to Horizon's Embrace. "
-            f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. To dash press {self.key('Dash')} or {self.key('Dash', 1)}. "
-            f"You can also dash in any different directions based on the keys you are pressing. Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on.",
-            text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
-
+            self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to Horizon's Embrace. You are now stuck in the Realm of Isoria."
+                                                                       f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. "
+                                                                       f"Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! "
+                                                                       f"The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on. ",
+                                           text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
 
         while self.state == 'Game':
             self.display.fill([0, 0, 0, 0])  # Clear the display
@@ -476,17 +507,12 @@ class Game:
                     self.particles.append(
                         Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-
-
             self.tilemap.render(self.display, offset=self.render_scroll)
+
             self.gm.update_render(self.display, self.dt, offset=self.render_scroll,
-                                      rot_function=self.handle_grass())
+                                  rot_function=self.handle_grass())
 
             # (x, y), direction, timer, bounced
-            for projectile in self.projectiles:
-                projectile.update()
-                projectile.render(self.display, offset=self.render_scroll)
-
 
             for spark in self.sparks:
                 spark.render(self.display, offset=self.render_scroll)
@@ -502,27 +528,32 @@ class Game:
                 if particle.update():
                     self.particles.remove(particle)
 
-
-
-
-
             self.handle_player()
             self.handle_enemies()
-            self.handle_clouds()
-            self.handle_transition_graphics()
+            self.handle_celestials()
 
-
+            # Create the outline effect
             display_mask = pygame.mask.from_surface(self.display)
             display_sillouette = display_mask.to_surface(setcolor=(0, 0, 0, 180), unsetcolor=(0, 0, 0, 0))
-            for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:  # outline
+            for offset in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
                 self.outline.blit(display_sillouette, offset)
 
             self.screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2,
                                        random.random() * self.screenshake - self.screenshake / 2)
 
+            # Anything after this won't be affected by the outline
+            # Make sure that the tilemap and grass is rendered after the outline offset is applied
 
 
+            self.player.render(self.display, offset=self.render_scroll)
+            for enemy in self.enemies:
+                enemy.render(self.display, offset=self.render_scroll)
 
+            for projectile in self.projectiles:
+                projectile.update()
+                projectile.render(self.display, offset=self.render_scroll)
+
+            self.handle_transition_graphics()
 
             #   Handle Basic Clockrate and Displays
 
@@ -530,16 +561,13 @@ class Game:
             self.dt = current_time - last_frame_time
             last_frame_time = current_time
 
-
             self.events()
             self.handle_UI()
             self.handle_dialogues()
 
-
             self.render_screen()
 
             self.clock.tick(self.framerate)
-
 
         #   Handle Menu States
         for state in self.menu_states:
@@ -552,11 +580,9 @@ class Game:
                 self.buttons = get_buttons(self, state)
                 self.sliders = get_sliders(self, state) or []
 
-
             while self.state == state:
                 if self.state != "Main Menu":
                     self.full_display.fill((0, 0, 0, 0))  # Clear the full display
-
 
                     # Handle Camera
                     self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
@@ -580,12 +606,9 @@ class Game:
                         self.load_level(0)
                         self.level = 0
 
-
                     self.display.fill((0, 0, 0, 0))  # Clear the display
                     self.outline.blit(pygame.transform.scale(self.assets['background'], self.zoom_size), (0, 0))
                     self.movement[1] = True
-
-
 
                     # Handle Camera
                     self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
@@ -594,7 +617,6 @@ class Game:
                     # print(self.render_scroll)
                     # print(self.player.rect().centerx, self.display.get_width() / 2, self.scroll[0])
 
-
                     # Handle Leaves
                     for rect in self.leaf_spawners:
                         if random.random() * 49999 < rect.width * rect.height:  # bigger number = less leaves
@@ -602,19 +624,12 @@ class Game:
                             self.particles.append(
                                 Particle(self, 'leaf', pos, velocity=(-0.11, 0.3), frame=random.randint(0, 20)))
 
-                    if self.clouds_enabled:
-                        self.clouds.update()
-                        self.clouds.render(self.outline, offset=self.render_scroll)
-
+                    self.handle_celestials()
 
                     self.tilemap.render(self.display, offset=self.render_scroll)
 
-
-
                     if self.tilemap.misc_tile_check(self.player.pos):  # Jump if the player is on a bouncer
                         self.player.jump(strength=1.2)
-
-
 
                     self.handle_player()
                     #   Handle Basic Clockrate and Displays
@@ -622,12 +637,10 @@ class Game:
                     self.outline.blit(self.display, (0, 0))
                     self.events()
 
-
                     for button in self.buttons:
                         button.render(self.full_display)
 
                     self.render_screen(menu=True)
-
 
     def events(self):
         for event in pygame.event.get():
@@ -658,11 +671,17 @@ class Game:
                     if event.key in self.keybinds["Dash"]:
                         self.player.dash()
                     if event.key in self.keybinds["Attack"]:
-                        self.player.attack()
-                        logging.info("Attack called")
+                        dialogue_skipped = False
                         for d in self.dialogues:
                             if d.done:
                                 self.dialogues.remove(d)
+                                dialogue_skipped = True
+                        if not dialogue_skipped:
+                            self.player.attack()
+                            logging.info("Attack called")
+                            if self.collectables["Sword Charge"]:
+                                self.player.start_charging()
+
                     if event.key == pygame.K_EQUALS:
                         self.zoom_size = [self.zoom_size[0] + 4, self.zoom_size[1] + 3]
                         self.display = pygame.Surface(self.zoom_size, pygame.SRCALPHA)
@@ -683,6 +702,9 @@ class Game:
                     if self.ADMIN and event.key == pygame.K_KP0:
                         self.level += 1
                         self.load_level(self.level)
+                    if self.ADMIN and event.key == pygame.K_KP1:
+                        self.level -= 1
+                        self.load_level(self.level)
                     # Swap admin if tilde is pressed
                     if event.key == pygame.K_BACKQUOTE:
                         self.ADMIN = not self.ADMIN
@@ -696,6 +718,8 @@ class Game:
                         self.up = False
                     if event.key in self.keybinds["Face Down"]:
                         self.down = False
+                    if event.key in self.keybinds["Attack"]:
+                        self.player.stop_charging()
 
             if self.state == "Pause":
                 if event.type == pygame.KEYDOWN:
@@ -724,7 +748,6 @@ class Game:
                         if button.type == "keybind" and button.rect.collidepoint(event.pos):
                             self.selected_keybind_button = button
                             print(f"Selected keybind for {self.selected_keybind_button.text}")
-
 
             if self.state in ['Main Menu', 'Pause', 'Options', 'Video', 'Audio']:
                 for slider in self.sliders:  # Use a different variable name in the loop
@@ -761,9 +784,6 @@ class Game:
                         if self.state == "Quit":
                             pygame.quit()
                             sys.exit()
-
-
-
 
 
 import cProfile

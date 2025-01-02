@@ -104,13 +104,13 @@ class PhysicsEntity:
 #############################################
 
 class Entity():
-    def __init__(self, game, e_type, pos, size, speed=1, leeway=(0, 0)):
+    def __init__(self, game, e_type, pos, size, speed=1, leeway=(0, 0), velocity=(0, 0), powerful=False, lifetime=1):
         self.game = game
         self.type = e_type
         self.pos = list(pos)
         self.size = size
-        self.velocity = [0, 0]
-
+        self.velocity = list(velocity)
+        self.powerful = powerful
         self.leeway = leeway
         self.action = ""
         self.anim_offset = (-3, -3)
@@ -119,7 +119,9 @@ class Entity():
         self.last_movement = [0, 0]
         self.speed = speed
         self.scale_speed = 1
-        self.dead = False
+        self.done = False
+        self.time = 0
+        self.lifetime = lifetime
 
     def rect(self):
         return pygame.Rect(self.pos[0], self.pos[1], self.size[0], self.size[1])
@@ -136,29 +138,41 @@ class Entity():
                                                           self.rect().width + self.leeway[0],
                                                           self.rect().height + self.leeway[1]), 1)
 
-    def update(self, tilemap, pos=None, movement=(0, 0)):
+    def update(self, tilemap, movement=(0, 0)):
 
-
-        if pos is None:
-            self.pos = self.pos
-
-        if movement[0] > 0:
+        if movement[0] > 0 or self.velocity[0] > 0:
             self.flip = False
-        elif movement[0] < 0:
+        elif movement[0] < 0 or self.velocity[0] < 0:
             self.flip = True
 
         if self.game.debugging:
             self.draw_hitbox()
-        self.done = self.animation.update()
+
+        self.time += 1
+        if self.powerful:
+            if self.time <= 3:
+                self.done = self.animation.update()
+
+        if self.time % self.lifetime == 0:
+            self.done = self.animation.update()
+
+
+        self.pos = list(self.pos)
+        if self.velocity[0] != 0:
+            self.pos[0] += self.velocity[0]
+        if self.velocity[1] != 0:
+            self.pos[1] += self.velocity[1]
+
 
         if self.type == "slash":
             for enemy in self.game.enemies:
-                if self.rect().colliderect(enemy.rect()) and self.dead == False:
+                if self.rect().colliderect(enemy.rect()):
                     enemy.die()
 
+    def render(self, surf, offset=(0, 0)):
+        # For powerful slashes, use the entity's own position
+        render_pos = self.pos
 
-
-
-    def render(self, surf, pos, offset=(0, 0)):
         surf.blit(pygame.transform.flip(self.animation.img(), self.flip, False),
-                  (pos[0] - offset[0] + self.anim_offset[0], pos[1] - offset[1] + self.anim_offset[1]))
+                  (render_pos[0] - offset[0] + self.anim_offset[0],
+                   render_pos[1] - offset[1] + self.anim_offset[1]))

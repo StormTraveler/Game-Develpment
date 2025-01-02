@@ -1,5 +1,5 @@
 import pygame
-from Utils import center_window
+from Scripts.Utils import center_window
 
 
 class UI:
@@ -83,14 +83,22 @@ class Button(UI):
             game.screen_size = game.resolutions[game.button_selected]
             return "Options"
 
-        if self.type == "resolution":
+        if self.type == "video":
             self.game.screen_size = self.game.resolutions[self.game.button_selected]
+            self.game.game_size = self.game.resolutions[self.game.button_selected]
             if self.game.resolutions[self.game.button_selected] == (1920, 1080):
-                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.NOFRAME, pygame.RESIZABLE)
+                #self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.NOFRAME, pygame.RESIZABLE)
+                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.OPENGL | pygame.DOUBLEBUF | pygame.NOFRAME)
+                self.game.ctx.viewport = (0, 0, self.game.screen_size[0], self.game.screen_size[1])
                 center_window()
+
             else:
-                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.RESIZABLE)
+                #self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.RESIZABLE)
+                self.game.screen = pygame.display.set_mode(self.game.screen_size, pygame.OPENGL | pygame.DOUBLEBUF | pygame.NOFRAME)
+                self.game.ctx.viewport = (100, 100, self.game.screen_size[0], self.game.screen_size[1])
                 center_window()
+
+
 
         if self.type == "start":
             self.game.level = 1
@@ -128,8 +136,7 @@ class Button(UI):
 
 
 class Slider(UI):
-    def __init__(self, game, rect, min_val, max_val, value, type, color=(255, 255, 255), text="",
-                 handle_color=(200, 200, 200)):
+    def __init__(self, game, rect, min_val, max_val, value, type, color=(255, 255, 255), text="", handle_color=(0, 0, 0)):
         self.rect = pygame.Rect(rect)
         self.type = type
         self.text = text
@@ -156,11 +163,9 @@ class Slider(UI):
         normalized_pos = (mouse_x - self.rect.x) / self.rect.width
         self.value = self.min_val + normalized_pos * (self.max_val - self.min_val)
         self.handle_rect = self.calculate_handle_rect()
+        self.update_value()
+        self.game.update_volumes()
 
-        # Handle specific slider types
-        if self.type == "music":
-            self.game.music_volume = self.value
-            pygame.mixer.music.set_volume(self.value)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -174,13 +179,24 @@ class Slider(UI):
             if self.dragging:
                 self.dragging = False
                 print(f"{self.text}: {self.value:.1f}")  # Print final value when released
+                self.update_value()
+
 
         elif event.type == pygame.MOUSEMOTION and self.dragging:
             self.set_value_from_mouse_x(event.pos[0])
 
+    def update_value(self):
+        if self.type == "master_volume":
+            self.game.master_volume = self.value
+        elif self.type == "music_volume":
+            self.game.music_volume = self.value
+        elif self.type == "sfx_volume":
+            self.game.sfx_volume = self.value
+
     def render(self, surf):
         pygame.draw.rect(surf, self.color, [self.rect.x, self.rect.y, self.rect.width, 10])
         pygame.draw.rect(surf, self.handle_color, self.handle_rect)
+
 
 class Dialogue(UI):
     def __init__(self, game, rect, text, color=None, leng=(1, 1), pos=(0, 0), img=None, font=None, type="Caption",
@@ -188,18 +204,15 @@ class Dialogue(UI):
         super().__init__(color=color, leng=leng, size=(rect[2], rect[3]), pos=pos, text=text, img=img, font=font,
                          type=type, text_color=text_color)
         self.counter = 0
-        self.displayed_text = ""
         self.rect = pygame.Rect(rect)
         self.font = pygame.font.Font("data/images/UI/SlacksideOne-Regular.ttf", 32)
         self.done = False
         self.text_surfaces = []
-        self.last_text = None
+        self.cached_surfaces = {}
+        self.last_counter = -1
 
-    def render(self, surf):
-        if self.img != None:
-            surf.blit(pygame.transform.scale(self.img, self.size), (self.rect[0], self.rect[1]))
-        if self.text != "":
-            self.draw_text(surf)
+        # Pre-wrap all text at initialization
+        self.wrapped_lines = self.wrap_text(text, self.rect.width - 20)
 
     def wrap_text(self, text, width):
         words = text.split(' ')
@@ -207,33 +220,59 @@ class Dialogue(UI):
         current_line = []
 
         for word in words:
-            # If adding the current word to the current line doesn't exceed the width
-            if self.font.size(' '.join(current_line + [word]))[0] <= width:
+            test_line = ' '.join(current_line + [word])
+            if self.font.size(test_line)[0] <= width:
                 current_line.append(word)
             else:
-                lines.append(' '.join(current_line))
+                if current_line:
+                    lines.append(' '.join(current_line))
                 current_line = [word]
 
-        lines.append(' '.join(current_line))
+        if current_line:
+            lines.append(' '.join(current_line))
         return lines
 
     def draw_text(self, surf):
-        displayed_text = self.text[0:(self.counter // 60)]
-        if displayed_text != self.last_text:
-            self.text_surfaces = []
-            wrapped_text = self.wrap_text(displayed_text, self.rect.width - 20)
-            for i, line in enumerate(wrapped_text):
-                text_obj = self.font.render(line, True, self.text_color)
-                self.text_surfaces.append((text_obj, pygame.Rect(self.rect[0] + 10,
-                                                                 self.rect[1] + 5 + i * self.font.get_linesize(),
-                                                                 self.rect[2], self.rect[3])))
-            self.last_text = displayed_text
+        current_char_count = self.counter // 60
 
-        for text_obj, text_rect in self.text_surfaces:
-            surf.blit(text_obj, text_rect)
+        if current_char_count != self.last_counter:
+            self.text_surfaces = []
+            total_chars = 0
+
+            for i, line in enumerate(self.wrapped_lines):
+                line_end = total_chars + len(line)
+                if total_chars >= current_char_count:
+                    break
+
+                display_chars = min(current_char_count - total_chars, len(line))
+                display_text = line[:display_chars]
+
+                # Use cached surface if available
+                cache_key = (display_text, i)
+                if cache_key not in self.cached_surfaces:
+                    self.cached_surfaces[cache_key] = self.font.render(display_text, True, self.text_color)
+
+                self.text_surfaces.append((
+                    self.cached_surfaces[cache_key],
+                    (self.rect[0] + 10, self.rect[1] + 5 + i * self.font.get_linesize())
+                ))
+
+                total_chars += len(line) + 1  # +1 for space between lines
+
+            self.last_counter = current_char_count
+
+        # Render from cached surfaces
+        for text_surf, pos in self.text_surfaces:
+            surf.blit(text_surf, pos)
 
     def update(self, surf=None, leng=None):
-        if self.counter < len(self.text) * 60:
+        if self.counter < len(''.join(self.wrapped_lines)) * 60:
             self.counter += 60
         else:
             self.done = True
+
+    def render(self, surf):
+        if self.img:
+            surf.blit(pygame.transform.scale(self.img, self.size), (self.rect[0], self.rect[1]))
+        if self.text:
+            self.draw_text(surf)

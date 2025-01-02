@@ -3,6 +3,7 @@ import random
 import pygame
 import json
 import sys
+from Scripts.UI import Dialogue
 sys.path.append('Scripts')
 
 NEIGHBOR_OFFSETS = [(-1, 0), (-1, -1), (0, -1), (1, -1), (1, 0), (0, 0), (-1, 1), (0, 1), (1, 1)]
@@ -22,7 +23,8 @@ AUTO_TILES_MAP = {
 
 AUTO_TILE_GRASS = [
     'grass',
-    'jungle'
+    'jungle',
+    'dark_grass'
 ]
 
 FOREGROUND_TILES = {
@@ -147,10 +149,10 @@ class Tilemap:
         return False
 
     def render(self, surf, offset=(0, 0), collision=True, misc=False):
-        # Calculate the visible area            #### 20 is the buffer and 40 is to add 20 to the other sides aswell
-        visible_area = pygame.Rect(0, 0, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+        # Calculate the visible area            #### 32 is the buffer and 64 is to add 32 to the other sides aswell
+        #visible_area = pygame.Rect(0, 0, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
 
-        visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+        visible_area = pygame.Rect(offset[0] - 32, offset[1] - 32, self.game.zoom_size[0] + 64, self.game.zoom_size[1] + 64)
 
         # Render offgrid tiles
         for tile in self.offgrid_tiles:
@@ -158,6 +160,63 @@ class Tilemap:
             if visible_area.colliderect(tile_rect):
                 surf.blit(self.game.assets[tile['type']][tile['variant']],
                           (tile['pos'][0] - offset[0], tile['pos'][1] - offset[1]))
+                #check for collectable collisions
+                if tile['type'] == 'collectables' and self.editor == False:
+                    tile_rect = pygame.Rect(tile['pos'][0] - offset[0], tile['pos'][1] - offset[1], 16, 16)
+                    if self.game.debugging:
+                        pygame.draw.rect(surf, (0, 255, 0), tile_rect, 1)
+
+                    player_rect = pygame.Rect(self.game.player.pos[0] - self.game.scroll[0],
+                                              self.game.player.pos[1] - self.game.scroll[1],
+                                              self.game.player.rect().width,
+                                              self.game.player.rect().height)
+
+                    if player_rect.colliderect(tile_rect):
+                        print('collected', tile['variant'])
+                        self.game.collectables[COLLECTABLE_KEYS[tile['variant']]] = True
+                        self.offgrid_tiles.remove(tile)
+                        self.game.player.health = self.game.player.max_health
+
+                        # reward player with collected values
+                        if tile['variant'] == 0:
+                            self.game.collectables['Dash'] = True
+                            self.game.dialogues.append(Dialogue(self, [80, 850, 1760, 200],
+                                                                f"Dash Unlocked! You can now dash by pressing the dash button! ({', '.join(pygame.key.name(self.game.keybinds['Dash'][i]) for i in range(len(self.game.keybinds['Dash'])))}) "
+                                                                f"Be careful when you use this ability, it can be dangerous! You can dash in any direction, even up! "
+                                                                f"Use it to dodge enemy attacks or to get to hard to reach places! "
+                                                                f"It is also a very lethal weapon when enemies come in contact with you during a dash! ",
+                            text_color=(255, 255, 255), img=self.game.assets["DialogueBox"]))
+
+                        if tile['variant'] == 1:
+                            self.game.player.max_jumps += 1
+                            self.game.dialogues.append(Dialogue(self, [80, 850, 1760, 200],
+                            f"Double Jump Unlocked! You can now jump twice! Be careful when you use this ability, "
+                            f"you don't want to jump too high ;) ",
+                            text_color=(255, 255, 255), img=self.game.assets["DialogueBox"]))
+
+                        if tile['variant'] == 2:
+                            self.game.player.sword_charge = True
+                            self.game.dialogues.append(Dialogue(self, [80, 850, 1760, 200],
+                            f"Sword Charge Unlocked! You can now charge your sword by holding the attack button! ({', '.join(pygame.key.name(self.game.keybinds['Attack'][i]) for i in range(len(self.game.keybinds['Attack'])))}) "
+                            f"Release the attack button to unleash a powerful attack once charged! ",
+                            text_color=(255, 255, 255), img=self.game.assets["DialogueBox"]))
+
+                        if tile['variant'] == 3:
+                            self.game.collectables['Wall Climb'] = True
+                            self.game.dialogues.append(Dialogue(self, [80, 850, 1760, 200],
+                            f"Wall Climb Unlocked! You can now climb walls by jumping towards them! ",
+                            text_color=(255, 255, 255), img=self.game.assets["DialogueBox"]))
+
+                        if tile['variant'] == 4:
+                            self.game.player.max_health += 1
+                            self.game.player.health += 1
+                            self.game.dialogues.append(Dialogue(self, [80, 850, 1760, 200],
+                            f"Increased max health! You can now take more damage! Ya Noob! "
+                            f"Be careful, you can still die! Your max health is now {self.game.player.max_health}. ",
+                            text_color=(255, 255, 255),
+                            img=self.game.assets["DialogueBox"]))
+
+
 
         # Render tiles in the tilemap
         for x in range(offset[0] // self.tile_size, (offset[0] + surf.get_width()) // self.tile_size + 1):
