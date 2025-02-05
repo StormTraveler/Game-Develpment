@@ -6,8 +6,11 @@ from array import array
 import pygame
 
 
-SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
-print(SF)
+#SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+#print(SF)
+
+SF = 1
+
 
 from Scripts.Enemy import Enemy
 from Scripts.Player import Player
@@ -73,7 +76,7 @@ class Game:
         self.music = True
         self.clouds_enabled = True
         self.stars_enabled = True
-        self.ADMIN = False
+        self.ADMIN = True
         self.UIs = []
         self.dialogues = []
         self.framerate = 60

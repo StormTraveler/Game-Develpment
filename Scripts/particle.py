@@ -88,7 +88,7 @@ class Projectile():
                     self.game.create_sparks(self.pos[0], self.pos[1], False)
 
 
-            elif self.game.player.rect().collidepoint(self.pos):  # it hit the player
+            elif self.reflected == False and self.game.player.rect().collidepoint(self.pos):  # it hit the player
                 if (abs(self.game.player.dashing[0]) < 30 and abs(
                         self.game.player.dashing[1]) < 30):  # after first 30 frames of dashing
                     self.game.projectiles.remove(self)
