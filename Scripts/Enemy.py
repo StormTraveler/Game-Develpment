@@ -9,15 +9,19 @@ import logging
 #############################################
 ###########    ENEMY CLASS    ###############
 #############################################
-class Enemy(PhysicsEntity):
+class Zenith(PhysicsEntity):
 
     # Define the Enemy Inheriting From Physics Entity
-    def __init__(self, game, pos, size, speed=1, leeway=(0, 0)):
-        super().__init__(game, "enemy", pos, size, speed, leeway)
+    def __init__(self, game, pos, size, speed=1, leeway=(0, 0), gun_type="pistol"):
+        e_type = {"pistol": "red", "ak": "green", "burst": "blue"}.get(gun_type, "Zenith")
+        super().__init__(game, "zenith/" + e_type, pos, size, speed, leeway)
         self.offcount = 0
         self.offmovecount = 0
-
+        self.gun = gun_type
         self.walking = 0
+
+        # Determine the gun image and color based on gun_type
+        self.gun_image = self.game.assets[self.gun]
 
     def die(self):
         self.game.sfx['hit'].play()
@@ -99,16 +103,16 @@ class Enemy(PhysicsEntity):
         if visible_area.colliderect(self.rect()):
             super().render(surf, offset=offset)
 
-            # Attach the Gun to the Enemy
+            # Render the gun and apply the color
             if self.flip:
-                surf.blit(pygame.transform.flip(self.game.assets['gun'], True, False),
-                          (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0],
+                surf.blit(pygame.transform.flip(self.gun_image, True, False),
+                          (self.rect().centerx - 4 - self.gun_image.get_width() - offset[0],
                            self.rect().centery - offset[1]))
             else:
-                surf.blit(self.game.assets['gun'], (self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
+                surf.blit(self.gun_image, (self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
+
         else:
-            pass
-            # If the Enemy is not in the visible area, do not render it
             self.offcount += 1
             if self.offcount % 60 == 0:
                 logging.debug("Enemy at x:" + str(self.rect().x) + " y:" + str(self.rect().y) + " is offscreen")
+

@@ -12,7 +12,7 @@ import pygame
 SF = 1
 
 
-from Scripts.Enemy import Enemy
+from Scripts.Enemy import Zenith
 from Scripts.Player import Player
 from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
@@ -73,7 +73,7 @@ class Game:
         self.master_volume = 1.0
         self.sfx_volume = 1.0
         self.music_volume = 1
-        self.music = True
+        self.music = False
         self.clouds_enabled = True
         self.stars_enabled = True
         self.ADMIN = True
@@ -191,10 +191,16 @@ class Game:
             "particle/leaf": Animation(load_images("particles/leaf"), 20, loop=False),
             "particle/particle": Animation(load_images("particles/particle"), 6, loop=False),
             "particle/charge_particle": Animation(load_images("particles/charge_particle"), 6, loop=False),
-            "enemy/idle": Animation(load_images("entities/enemy/idle"), 6),
-            "enemy/run": Animation(load_images("entities/enemy/run"), 4),
+            "zenith/red/idle": Animation(load_images("entities/zenith/red/idle"), 6),
+            "zenith/red/run": Animation(load_images("entities/zenith/red/run"), 4),
+            "zenith/green/idle": Animation(load_images("entities/zenith/green/idle"), 6),
+            "zenith/green/run": Animation(load_images("entities/zenith/green/run"), 4),
+            "zenith/blue/idle": Animation(load_images("entities/zenith/blue/idle"), 6),
+            "zenith/blue/run": Animation(load_images("entities/zenith/blue/run"), 4),
             "slash/idle": Animation(load_images("particles/slash"), 1, loop=False),
-            "gun": load_image("gun"),
+            "pistol": load_image("pistol"),
+            "ak": load_image("ak"),
+            "burst": load_image("burst"),
             "bullet": load_image("bullet"),
             "ButtonSelected": pygame.image.load("data/images/ButtonSelect.png").convert_alpha(),
             "MenuBackground": load_image("backgrounds/MenuBackground"),
@@ -259,11 +265,21 @@ class Game:
             self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
 
         self.enemies = []
-        for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1)]):
+        # Define a dictionary to map spawner variants to gun types
+        variant_to_gun_type = {
+            1: "pistol",
+            2: "ak",
+            3: "burst"
+        }
+
+        for spawner in self.tilemap.extract([('spawners', 0), ('spawners', 1), ('spawners', 2), ('spawners', 3)]):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos']
             else:
-                self.enemies.append(Enemy(self, spawner['pos'], [8, 15], speed=1, leeway=(2, 5)))
+                gun_type = variant_to_gun_type.get(spawner['variant'])
+                if gun_type:
+                    self.enemies.append(
+                        Zenith(self, spawner['pos'], [8, 15], speed=1, leeway=(2, 5), gun_type=gun_type))
 
         if map_id != 1 and transition:
             self.transition = -30
