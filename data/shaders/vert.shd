@@ -1,0 +1,13 @@
+#version 330 core
+
+// Input attributes from the vertex buffer
+in vec2 vert;    // Vertex position
+in vec2 texcoord; // Texture coordinates
+
+// Pass texture coordinates to the fragment shader
+out vec2 uvs;
+
+void main() {
+    uvs = texcoord; // Pass the texture coordinates to the next stage
+    gl_Position = vec4(vert, 0.0, 1.0); // Set the vertex position
+}

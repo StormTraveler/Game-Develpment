@@ -87,6 +87,11 @@ class Game:
         self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
         self.grass_time = 0
 
+        with open('data/shaders/vert.shd', 'r') as v:
+            self.vert_shader = v.read()
+        with open('data/shaders/frag.shd', 'r') as f:
+            self.frag_shader = f.read()
+
         self.ctx = moderngl.create_context()
         self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.frag_shader)
         self.quad_buffer = self.ctx.buffer(data=array('f', [
@@ -97,50 +102,11 @@ class Game:
             1.0, -1.0, 1.0, 1.0,  # bottomright
         ]))
 
-        self.vert_shader = '''
-        #version 330 core
 
-        in vec2 vert;
-        in vec2 texcoord;
-        out vec2 uvs;
-
-        void main() {
-            uvs = texcoord;
-            gl_Position = vec4(vert, 0.0, 1.0);
-        }
-        '''
-        self.frag_shader = '''
-        #version 330 core
-
-        uniform sampler2D tex; // texture is just getting the screen texture so that you can call texture(tex, samlpe_pos) so that you can get the color values at that location
-
-        in vec2 uvs;
-        out vec4 f_color;
-
-        void main() {
-            vec2 sample_pos = vec2(uvs.x, uvs.y);
-            f_color = vec4(texture(tex, sample_pos).rg, texture(tex, sample_pos).b, 1.0); // f_color is r, g, b, a
-        }
-        '''
         self.render_object = self.ctx.vertex_array(self.program, [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')])
 
-        if self.ADMIN:
-            self.collectables = {
-                "Dash": True,
-                "Double Jump": True,
-                "Wall Climb": True,
-                "Sword Charge": True,  # Spur ability
-                "Health": True,
-            }
-            # self.music = False
-        else:
-            self.collectables = {
-                "Dash": False,
-                "Double Jump": False,
-                "Wall Climb": False,
-                "Sword Charge": False,  # Spur ability
-                "Health": False,
-            }
+        self.collectables = {
+            key: self.ADMIN for key in ["Dash", "Double Jump", "Wall Climb", "Sword Charge", "Health"]}
 
         self.keybinds = {
             "Face Up": [pygame.K_UP, pygame.K_w],
@@ -394,18 +360,14 @@ class Game:
             d.update()
             d.render(self.full_display)
 
-    def handle_clouds(self):
-        if self.clouds_enabled:
-            self.cloud_manager.update()
-            self.cloud_manager.render(self.outline, offset=self.render_scroll, mod=True)
 
-    def handle_stars(self):
+    def handle_celestials(self):
         if self.stars_enabled:
             self.star_manager.render(self.outline, offset=self.render_scroll, mod=True)
 
-    def handle_celestials(self):
-        self.handle_stars()
-        self.handle_clouds()
+        if self.clouds_enabled:
+            self.cloud_manager.update()
+            self.cloud_manager.render(self.outline, offset=self.render_scroll, mod=True)
 
     def handle_transition_graphics(self):
         if self.transition:

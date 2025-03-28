@@ -9,7 +9,7 @@ Fix Render order {The player outline is rendering under the terrain}
 Create a known bug list
 try to fix the dialogue lag - Done?
 
-Move the grass from side to side when walking
+Move the grass from side to side when walking USE y = abs(sin(x)) * 10
 make the grass faster, so it does not idle
 save / load
 moon/sun

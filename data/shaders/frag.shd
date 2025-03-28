@@ -1,0 +1,20 @@
+#version 330 core
+
+// Texture sampler (set from the CPU)
+uniform sampler2D tex;
+
+// Input from the vertex shader
+in vec2 uvs;
+
+// Output fragment color
+out vec4 f_color;
+
+void main() {
+    // Sample the texture at the given coordinates
+    vec2 sample_pos = vec2(uvs.x, uvs.y);
+
+    // Fetch color from the texture and construct the output color
+    f_color = vec4(texture(tex, sample_pos).rg, // Red & Green channels
+                   texture(tex, sample_pos).b,  // Blue channel
+                   1.0); // Alpha (fully opaque)
+}
