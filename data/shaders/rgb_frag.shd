@@ -1,4 +1,3 @@
-'''
 #version 330 core
 
 uniform sampler2D tex;
@@ -30,4 +29,3 @@ void main() {
     vec3 rgb = hsv2rgb(hsv);
     f_color = vec4(rgb, color.a);
 }
-'''

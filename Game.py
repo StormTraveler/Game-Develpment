@@ -88,6 +88,7 @@ class Game:
         self.grass_time = 0
 
         self.ctx = moderngl.create_context()
+        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.frag_shader)
         self.quad_buffer = self.ctx.buffer(data=array('f', [
             # position (x, y), uv coords (x, y)
             -1.0, 1.0, 0.0, 0.0,  # topleft
@@ -111,17 +112,16 @@ class Game:
         self.frag_shader = '''
         #version 330 core
 
-        uniform sampler2D tex;
+        uniform sampler2D tex; // texture is just getting the screen texture so that you can call texture(tex, samlpe_pos) so that you can get the color values at that location
 
         in vec2 uvs;
         out vec4 f_color;
 
         void main() {
             vec2 sample_pos = vec2(uvs.x, uvs.y);
-            f_color = vec4(texture(tex, sample_pos).rg, texture(tex, sample_pos).b * 1.5, 1.0);
+            f_color = vec4(texture(tex, sample_pos).rg, texture(tex, sample_pos).b, 1.0); // f_color is r, g, b, a
         }
         '''
-        self.program = self.ctx.program(vertex_shader=self.vert_shader, fragment_shader=self.frag_shader)
         self.render_object = self.ctx.vertex_array(self.program, [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')])
 
         if self.ADMIN:
