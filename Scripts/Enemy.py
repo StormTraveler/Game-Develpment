@@ -19,6 +19,8 @@ class Zenith(PhysicsEntity):
         self.offmovecount = 0
         self.gun = gun_type
         self.walking = 0
+        self.auto_shooting = False
+        self.burst_count = 0
 
         # Determine the gun image and color based on gun_type
         self.gun_image = self.game.assets[self.gun]
@@ -52,6 +54,20 @@ class Zenith(PhysicsEntity):
 
         self.game.create_sparks(self.rect().centerx, self.rect().centery, self.flip)
 
+    def burst_shoot(self, vel, burst_size=3, burst_delay=10):
+        if self.burst_count < burst_size:
+            self.shoot_and_spark(vel)
+            self.burst_count += 1
+        else:
+            self.burst_count = 0
+            pygame.time.set_timer(pygame.USEREVENT + 1, burst_delay)
+
+    def auto_shoot(self, vel, auto_delay=5):
+        if not self.auto_shooting:
+            self.auto_shooting = True
+            pygame.time.set_timer(pygame.USEREVENT + 2, auto_delay)
+        self.shoot_and_spark(vel)
+
 
 
     # Main Enemy Update Function (Overriden)
@@ -68,11 +84,21 @@ class Zenith(PhysicsEntity):
             self.walking = max(0, self.walking - 1)
             if not self.walking:
                 dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
-                if abs(dis[1] < 16):  # Shoots
+                if abs(dis[1] < 16):
                     if self.flip and dis[0] < 0:
-                        self.shoot_and_spark((-1, 0))
+                        if self.gun == "burst":
+                            self.burst_shoot((-1, 0))
+                        elif self.gun == "ak":
+                            self.auto_shoot((-1, 0))
+                        else:
+                            self.shoot_and_spark((-1, 0))
                     elif not self.flip and dis[0] > 0:
-                        self.shoot_and_spark((1, 0))
+                        if self.gun == "burst":
+                            self.burst_shoot((1, 0))
+                        elif self.gun == "ak":
+                            self.auto_shoot((1, 0))
+                        else:
+                            self.shoot_and_spark((1, 0))
 
 
         elif random.random() < 0.01:

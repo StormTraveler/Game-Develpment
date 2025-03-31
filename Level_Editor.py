@@ -10,7 +10,7 @@ import os
 print(os.getcwd())
 
 
-MAP_TO_EDIT = "data/maps/0.json"
+MAP_TO_EDIT = "data/maps/2.json"
 class Editor:
     def __init__(self):
         self.game_size = [1920, 1080]
