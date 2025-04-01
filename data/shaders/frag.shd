@@ -12,9 +12,15 @@ out vec4 f_color;
 void main() {
     // Sample the texture at the given coordinates
     vec2 sample_pos = vec2(uvs.x, uvs.y);
+    vec4 color = texture(tex, sample_pos);
 
-    // Fetch color from the texture and construct the output color
-    f_color = vec4(texture(tex, sample_pos).rg, // Red & Green channels
-                   texture(tex, sample_pos).b,  // Blue channel
-                   1.0); // Alpha (fully opaque)
+    // Define the target color (196, 44, 54) in normalized form
+    vec3 target_color = vec3(196.0 / 255.0, 44.0 / 255.0, 54.0 / 255.0);
+
+    // Check if the current pixel matches the target color
+    f_color = color;
+    if (color.rgb == target_color) {
+        f_color = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    f_color = color;
 }

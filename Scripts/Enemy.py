@@ -20,7 +20,13 @@ class Zenith(PhysicsEntity):
         self.gun = gun_type
         self.walking = 0
         self.auto_shooting = False
-        self.burst_count = 0
+        self.clip = 1
+        clip_sizes = {"pistol": 1, "ak": 30, "burst": 3}
+        self.max_clip_size = clip_sizes.get(self.gun, 1)
+        self.reload = -60
+        self.shoot_delay = 0
+        delays = {"pistol": 0, "ak": 10, "burst": 5}
+        self.max_shoot_delay = delays.get(self.gun, 0)
 
         # Determine the gun image and color based on gun_type
         self.gun_image = self.game.assets[self.gun]
@@ -34,16 +40,15 @@ class Zenith(PhysicsEntity):
 
         self.game.player.coins += 1
 
-
         #   Death Sparks
         for i in range(25):
             speed = random.random() * 5
             angle = random.random() * math.pi * 2
             self.game.sparks.append(Spark((self.rect().x, self.rect().y), angle, 2 + random.random()))
             self.game.particles.append(Particle(self.game, 'particle', self.rect().center,
-                                           velocity=[math.cos(angle + math.pi) * speed * 0.5,
-                                                     math.sin(angle + math.pi) * speed * 0.5],
-                                           frame=random.randint(0, 7)))
+                                                velocity=[math.cos(angle + math.pi) * speed * 0.5,
+                                                          math.sin(angle + math.pi) * speed * 0.5],
+                                                frame=random.randint(0, 7)))
 
     def shoot_and_spark(self, vel):
         self.game.sfx['shoot'].play()
@@ -51,24 +56,7 @@ class Zenith(PhysicsEntity):
         self.game.projectiles.append(Projectile(self.game, self.rect().center, [vel[0] * 1.5, 0], 320,
                                                 False, 1, img=self.game.assets['bullet']))
 
-
         self.game.create_sparks(self.rect().centerx, self.rect().centery, self.flip)
-
-    def burst_shoot(self, vel, burst_size=3, burst_delay=10):
-        if self.burst_count < burst_size:
-            self.shoot_and_spark(vel)
-            self.burst_count += 1
-        else:
-            self.burst_count = 0
-            pygame.time.set_timer(pygame.USEREVENT + 1, burst_delay)
-
-    def auto_shoot(self, vel, auto_delay=5):
-        if not self.auto_shooting:
-            self.auto_shooting = True
-            pygame.time.set_timer(pygame.USEREVENT + 2, auto_delay)
-        self.shoot_and_spark(vel)
-
-
 
     # Main Enemy Update Function (Overriden)
     def update(self, tilemap, movement=(0, 0), offset=(0, 0)):
@@ -82,27 +70,35 @@ class Zenith(PhysicsEntity):
                 self.flip = not self.flip
 
             self.walking = max(0, self.walking - 1)
+
+        elif random.random() < 0.01 and self.clip == self.max_clip_size:
+            self.walking = random.randint(30, 120)
+
+        if self.clip > 0 and self.shoot_delay <= 0:
+            # Has ammo to shoot
             if not self.walking:
                 dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
-                if abs(dis[1] < 16):
+                if abs(dis[0]) < 64 and abs(dis[1] < 32):  # Make sure the y distance is less than 32
                     if self.flip and dis[0] < 0:
-                        if self.gun == "burst":
-                            self.burst_shoot((-1, 0))
-                        elif self.gun == "ak":
-                            self.auto_shoot((-1, 0))
-                        else:
-                            self.shoot_and_spark((-1, 0))
+                        self.shoot_and_spark((-1, 0))
+                        self.clip -= 1
+                        self.shoot_delay = 5
+                        logging.debug(f"Shot fired. Remaining clip: {self.clip}")
                     elif not self.flip and dis[0] > 0:
-                        if self.gun == "burst":
-                            self.burst_shoot((1, 0))
-                        elif self.gun == "ak":
-                            self.auto_shoot((1, 0))
-                        else:
-                            self.shoot_and_spark((1, 0))
-
-
-        elif random.random() < 0.01:
-            self.walking = random.randint(30, 120)
+                        self.shoot_and_spark((1, 0))
+                        self.clip -= 1
+                        self.shoot_delay = 5
+                        logging.debug(f"Shot fired. Remaining clip: {self.clip}")
+        else:
+            if self.reload >= 0:
+                reload_times = {"pistol": -120, "ak": -20, "burst": -30}
+                self.reload = reload_times.get(self.gun, -60)
+                self.clip = self.max_clip_size
+                logging.debug(f"Reloading. New clip size: {self.clip}, reload time: {self.reload}")
+            else:
+                self.reload += 1
+                self.shoot_delay -= 1
+                logging.debug(f"Reloading in progress. Reload time: {self.reload}")
 
         super().update(tilemap, movement=movement)
 
@@ -119,13 +115,12 @@ class Zenith(PhysicsEntity):
 
                 self.die()
 
-
-
     # Main Enemy Render Function (Overriden)
     # Includes Gun Handling
     def render(self, surf, offset=(0, 0)):
 
-        visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40, self.game.zoom_size[1] + 40)
+        visible_area = pygame.Rect(offset[0] - 20, offset[1] - 20, self.game.zoom_size[0] + 40,
+                                   self.game.zoom_size[1] + 40)
         if visible_area.colliderect(self.rect()):
             super().render(surf, offset=offset)
 
@@ -141,4 +136,3 @@ class Zenith(PhysicsEntity):
             self.offcount += 1
             if self.offcount % 60 == 0:
                 logging.debug("Enemy at x:" + str(self.rect().x) + " y:" + str(self.rect().y) + " is offscreen")
-

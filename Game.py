@@ -399,11 +399,18 @@ class Game:
         # ooga booga do some magic, make grass blow in the wind
         self.t = time.time() - self.start
         phase_shift = self.t * 2
-        rot_function = lambda x, y: min(int((math.sin(phase_shift - x * 16 / 180) * 20)), 140 - (x % 2))
+        rot_function = lambda x, y: (
+            min(int((
+                    math.sin(phase_shift - x * 0.2) * 20)),
+                140 - (x % 2))
+        )
+        #lambda x, y: min(int((math.sin(phase_shift - x * 16 / 180) * 20)), 140 - (x % 2))
         # Honestly I have no idea what is going on here ^.^ but it works???
         return rot_function
 
     def render_screen(self, menu=False):
+        #self.program['time'] = (time.time() - self.start) * 10
+
         if menu:
             for slider in self.sliders:
                 slider.render(self.full_display)
@@ -686,6 +693,7 @@ class Game:
                     # Swap admin if tilde is pressed
                     if event.key == pygame.K_BACKQUOTE:
                         self.ADMIN = not self.ADMIN
+
 
                 if event.type == pygame.KEYUP:
                     if event.key in self.keybinds["Move Left"]:
