@@ -156,7 +156,7 @@ class Player(PhysicsEntity):
 
             if slash.powerful:
                 slash.render(self.game.display, offset=self.game.render_scroll)
-                print("rendering powerful slash at", slash.pos)
+                logging.debug("rendering powerful slash at", slash.pos)
             else:
                 slash.flip = self.flip
                 if self.flip:
@@ -283,11 +283,11 @@ class Player(PhysicsEntity):
         if powerful:
             self.attacking = 25
             self.slashes.append(Entity(self.game, "slash", (self.rect().x, self.rect().y), size=(8, 16), leeway=(0, 0), velocity=[-3 if self.flip else 3, 0], powerful=True, lifetime=5))
-            print("Powerful Attack with velocity of", self.velocity)
+            logging.debug("Powerful Attack with velocity of " + str(self.velocity))
         elif not self.attacking:
             self.attacking = 25
             self.slashes.append(Entity(self.game, "slash", self.rect().center, size=(8, 16),  leeway=(0, 0)))
-            print("Normal Attack")
+            logging.debug("Normal Attack")
 
     def handle_charging_particles(self):
         if 20 <= self.charging < 70:
@@ -343,7 +343,7 @@ class Player(PhysicsEntity):
         self.game.sfx['charged'].stop()
         if self.charging >= 70:
             self.attack(powerful=True)
-        print(self.charging)
+        logging.debug("Charging # is =: " + str(self.charging))
         self.charging = 0
 
 

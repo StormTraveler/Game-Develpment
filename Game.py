@@ -1,18 +1,7 @@
+#!/usr/bin/env pypy
 import logging
-import ctypes
 import sys
 from array import array
-#!/usr/bin/env pypy
-import pygame
-
-# Pushed as of the 3/29
-
-#SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
-#print(SF)
-
-SF = 1
-
-
 from Scripts.Enemy import Zenith
 from Scripts.Player import Player
 from Scripts.Utils import *
@@ -22,7 +11,12 @@ from Scripts.particle import Particle, Spark
 from Scripts.UI import UI, Button, Dialogue
 from Scripts.grass import *
 from Scripts.Menu import *
+# Pushed as of the 3/29
 
+
+#SF = ctypes.windll.shcore.GetScaleFactorForDevice(0) / 100
+SF = 1
+logging.debug("Scale Factor is " + str(SF))
 # os.environ['SDL_VIDEO_WINDOW_POS'] = "0,0" Makes it open in the top left
 logging.basicConfig(level=logging.INFO)
 
@@ -55,38 +49,39 @@ class Game:
         self.outline = pygame.Surface(self.zoom_size, pygame.OPENGL | pygame.DOUBLEBUF)
 
         self.outline.set_alpha(None)
-
         self.clock = pygame.time.Clock()
         self.state = "Main Menu"
         self.movement = [False, False]
         self.scroll = [0, 0]
+        self.buttons = []
+        self.sliders = []
+        self.UIs = []
+        self.dialogues = []
+
         self.debugging = False
         self.up = False
         self.down = False
-        self.buttons = []
-        self.sliders = []
         self.dragging = False
         self.button_selected = 0
         self.selected_keybind_button = None
         self.key_code = None
+        self.music = False
+        self.clouds_enabled = True
+        self.stars_enabled = True
+        self.ADMIN = True
+
         self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Audio", "Video", "Inventory"]
         self.screenshake = 0
         self.master_volume = 1.0
         self.sfx_volume = 1.0
         self.music_volume = 1
-        self.music = False
-        self.clouds_enabled = True
-        self.stars_enabled = True
-        self.ADMIN = True
-        self.UIs = []
-        self.dialogues = []
         self.framerate = 60
         self.start = time.time()
-
-        self.gm = GrassManager('data/images/grass/medium_dark', tile_size=16, stiffness=600, max_unique=5,
-                               place_range=[1, 1])
-        self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
         self.grass_time = 0
+
+
+        self.gm = GrassManager('data/images/grass/medium_dark', tile_size=16, stiffness=600, max_unique=5, place_range=[1, 1])
+        self.gm.enable_ground_shadows(shadow_radius=4, shadow_color=(0, 0, 1), shadow_shift=(1, 2))
 
         with open('data/shaders/vert.shd', 'r') as v:
             self.vert_shader = v.read()
@@ -155,20 +150,23 @@ class Game:
             "player/sword_slide": Animation(load_images("entities/player/sword_wall_slide"), 5),
             "player/sword_wall_slide": Animation(load_images("entities/player/sword_wall_slide"), 5),
 
-            "particle/leaf": Animation(load_images("particles/leaf"), 20, loop=False),
-            "particle/particle": Animation(load_images("particles/particle"), 6, loop=False),
-            "particle/charge_particle": Animation(load_images("particles/charge_particle"), 6, loop=False),
             "zenith/red/idle": Animation(load_images("entities/zenith/red/idle"), 6),
             "zenith/red/run": Animation(load_images("entities/zenith/red/run"), 4),
             "zenith/green/idle": Animation(load_images("entities/zenith/green/idle"), 6),
             "zenith/green/run": Animation(load_images("entities/zenith/green/run"), 4),
             "zenith/blue/idle": Animation(load_images("entities/zenith/blue/idle"), 6),
             "zenith/blue/run": Animation(load_images("entities/zenith/blue/run"), 4),
+
+            "particle/leaf": Animation(load_images("particles/leaf"), 20, loop=False),
+            "particle/particle": Animation(load_images("particles/particle"), 6, loop=False),
+            "particle/charge_particle": Animation(load_images("particles/charge_particle"), 6, loop=False),
+
             "slash/idle": Animation(load_images("particles/slash"), 1, loop=False),
             "pistol": load_image("pistol"),
             "ak": load_image("ak"),
             "burst": load_image("burst"),
             "bullet": load_image("bullet"),
+
             "ButtonSelected": pygame.image.load("data/images/ButtonSelect.png").convert_alpha(),
             "MenuBackground": load_image("backgrounds/MenuBackground"),
 
@@ -294,6 +292,7 @@ class Game:
         # Apply master volume to music
         pygame.mixer.music.set_volume(0.5 * self.music_volume * self.master_volume)
 
+
     def handle_player(self):
         if self.player.health <= 0:
             self.load_level(self.level)
@@ -306,12 +305,14 @@ class Game:
                                speed=self.player.speed * self.dt + 120 // self.framerate)
             self.player.render(self.display, offset=self.render_scroll)
 
+
     def handle_enemies(self):
         for enemy in self.enemies:
             enemy.update(self.tilemap, (0, 0), offset=self.render_scroll)
             if self.debugging:
                 enemy.draw_hitbox()
             enemy.render(self.display, offset=self.render_scroll)
+
 
     def handle_UI(self):
         for ui in self.UIs:
@@ -325,36 +326,10 @@ class Game:
         fps = self.clock.get_fps()
         fps_text = pygame.font.Font(None, 20).render(f"FPS: {fps:.2f}", True, (255, 255, 255))
         self.display.blit(fps_text, (self.display.get_width() - fps_text.get_width(), 0))
-        #if self.debugging:
-
-
-            # master_volume_text = pygame.font.Font(None, 20).render(f"Master Volume: {self.master_volume:.1f}", True, (255, 255, 255))
-            # self.display.blit(master_volume_text, (0, 0))
-            # music_volume_text = pygame.font.Font(None, 20).render(f"Music Volume: {self.music_volume:.1f}", True, (255, 255, 255))
-            # self.display.blit(music_volume_text, (0, 30))
-            # sfx_volume_text = pygame.font.Font(None, 20).render(f"SFX Volume: {self.sfx_volume:.1f}", True, (255, 255, 255))
-            # self.display.blit(sfx_volume_text, (0, 60))
-
-            # x = pygame.font.Font(None, 20).render(f"X: {round(self.player.pos[0], 2)}", True, (255, 255, 255))
-            # self.display.blit(x, (0, 50))
-            #
-            # y = pygame.font.Font(None, 20).render(f"Y: {int(self.player.pos[1])}", True, (255, 255, 255))
-            # self.display.blit(y, (0, 80))
-            #
-            # scrollx = pygame.font.Font(None, 20).render(f"Scroll X: {int(self.scroll[0])}", True, (255, 255, 255))
-            # self.display.blit(scrollx, (0, 110))
-            #
-            # scrolly = pygame.font.Font(None, 20).render(f"Scroll Y: {int(self.scroll[1])}", True, (255, 255, 255))
-            # self.display.blit(scrolly, (0, 140))
-            #
-            # renderscrollx = pygame.font.Font(None, 20).render(f"Render Scroll X: {int(self.render_scroll[0])}", True, (255, 255, 255))
-            # self.display.blit(renderscrollx, (0, 170))
-            #
-            # renderscrolly = pygame.font.Font(None, 20).render(f"Render Scroll Y: {int(self.render_scroll[1])}", True, (255, 255, 255))
-            # self.display.blit(renderscrolly, (0, 200))
 
         money_text = pygame.font.Font(None, 30).render(f"{self.player.coins}", True, (205, 220, 25))
         self.display.blit(money_text, (16, 16))
+
 
     def handle_dialogues(self):
         for d in self.dialogues:
@@ -370,6 +345,7 @@ class Game:
             self.cloud_manager.update()
             self.cloud_manager.render(self.outline, offset=self.render_scroll, mod=True)
 
+
     def handle_transition_graphics(self):
         if self.transition:
             transition_surf = pygame.Surface((self.display.get_size()))
@@ -378,6 +354,7 @@ class Game:
                                (30 - abs(self.transition)) * 8)
             transition_surf.set_colorkey((255, 255, 255))
             self.display.blit(transition_surf, (0, 0))
+
 
     def create_explosion(self, x, y):
         for i in range(30):
@@ -389,11 +366,13 @@ class Game:
                                                      math.sin(angle + math.pi) * speed * 0.5],
                                            frame=random.randint(0, 7)))
 
+
     def create_sparks(self, x, y, flipped):
         for i in range(4):
             self.sparks.append(
                 Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
                       2 + random.random()))
+
 
     def handle_grass(self):
         # ooga booga do some magic, make grass blow in the wind
@@ -407,6 +386,7 @@ class Game:
         #lambda x, y: min(int((math.sin(phase_shift - x * 16 / 180) * 20)), 140 - (x % 2))
         # Honestly I have no idea what is going on here ^.^ but it works???
         return rot_function
+
 
     def render_screen(self, menu=False):
         #self.program['time'] = (time.time() - self.start) * 10
@@ -438,6 +418,7 @@ class Game:
 
             frame_tex.release()
 
+
     def surf_to_texture(self, surf):
         tex = self.ctx.texture(surf.get_size(), 4)
         tex.filter = (moderngl.NEAREST, moderngl.NEAREST)
@@ -445,6 +426,7 @@ class Game:
         tex.write(surf.get_view('1'))
 
         return tex
+
 
     def run(self):
 
@@ -474,7 +456,6 @@ class Game:
                 if self.transition > 30:
                     self.level += 1
                     self.load_level(self.level)
-
             if self.transition < 0:
                 self.transition += 1
 
@@ -529,7 +510,6 @@ class Game:
             # Anything after this won't be affected by the outline
             # Make sure that the tilemap and grass is rendered after the outline offset is applied
 
-
             self.player.render(self.display, offset=self.render_scroll)
             for enemy in self.enemies:
                 enemy.render(self.display, offset=self.render_scroll)
@@ -549,9 +529,7 @@ class Game:
             self.events()
             self.handle_UI()
             self.handle_dialogues()
-
             self.render_screen()
-
             self.clock.tick(self.framerate)
 
         #   Handle Menu States
@@ -560,7 +538,7 @@ class Game:
                 self.load_level(0)
                 self.buttons = get_buttons(self, state)
                 self.sliders = get_sliders(self, state) or []
-                print('intializing main menu')
+                logging.info('intializing main menu')
             else:
                 self.buttons = get_buttons(self, state)
                 self.sliders = get_sliders(self, state) or []
@@ -582,8 +560,6 @@ class Game:
                     for button in self.buttons:
                         button.render(self.full_display)
 
-                    # print(len(self.buttons))
-
                     self.render_screen(menu=True)
 
                 else:  # Handle Menu Animation
@@ -599,8 +575,6 @@ class Game:
                     self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) - 35
                     self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) - 20
                     self.render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
-                    # print(self.render_scroll)
-                    # print(self.player.rect().centerx, self.display.get_width() / 2, self.scroll[0])
 
                     # Handle Leaves
                     for rect in self.leaf_spawners:
@@ -627,6 +601,7 @@ class Game:
 
                     self.render_screen(menu=True)
 
+
     def events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -637,7 +612,7 @@ class Game:
             elif event.type == pygame.VIDEORESIZE:
                 self.screen_size = event.size
                 self.screen = pygame.display.set_mode(self.screen_size, pygame.RESIZABLE)
-                print("Screen size changed to: " + str(self.screen_size) + " aspect ratio is now " + str(
+                logging.info("Screen size changed to: " + str(self.screen_size) + " aspect ratio is now " + str(
                     self.screen_size[0] / self.screen_size[1]))
 
             if self.state == "Game":
@@ -722,8 +697,6 @@ class Game:
 
                         self.keybinds[action_name] = [self.key_code]
 
-                        print(f"Keybind for {action_name} changed to {pygame.key.name(event.key)}")
-
                     self.selected_keybind_button = None  # Reset selected button after updating keybind
 
                     if event.key == pygame.K_ESCAPE:
@@ -733,7 +706,6 @@ class Game:
                     for button in self.buttons:
                         if button.type == "keybind" and button.rect.collidepoint(event.pos):
                             self.selected_keybind_button = button
-                            print(f"Selected keybind for {self.selected_keybind_button.text}")
 
             if self.state in ['Main Menu', 'Pause', 'Options', 'Video', 'Audio']:
                 for slider in self.sliders:  # Use a different variable name in the loop
@@ -744,7 +716,7 @@ class Game:
                         self.state = 'Game'
                         return True
                     if event.key == pygame.K_SLASH:
-                        print(self.button_selected)
+                        logging.info("pressing", self.button_selected)
                     if event.key == pygame.K_UP:
                         self.button_selected -= 1
                         if self.button_selected < 0:
@@ -759,7 +731,7 @@ class Game:
                             pass
                         elif self.state == "Resolution":
                             self.state = self.buttons[self.button_selected].action(self)
-                            print(self.buttons[self.button_selected].action(self))
+                            logging.info(self.buttons[self.button_selected].action(self))
 
                             self.button_selected = 0
 
@@ -772,19 +744,9 @@ class Game:
                             sys.exit()
 
 
-#import cProfile
-#import pstats
-
 if __name__ == "__main__":
     game = Game()
 
     while True:
-        #profiler = cProfile.Profile()
-        #profiler.enable()
-
         game.run()
 
-        #profiler.disable()
-        #stats = pstats.Stats(profiler)
-        #stats.sort_stats('time')  # Sort by cumulative time
-        #stats.print_stats()

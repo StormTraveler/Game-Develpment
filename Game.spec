@@ -2,11 +2,11 @@
 
 
 a = Analysis(
-    ['C:/Users/danie/Documents/GitHub/Game-Develpment/Game.py'],
+    ['Game.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/Users/danie/Documents/GitHub/Game-Develpment/data', 'data/'), ('C:/Users/danie/Documents/GitHub/Game-Develpment/Scripts', 'Scripts/')],
-    hiddenimports=['numpy', 'PIL'],
+    datas=[('Scripts', 'Scripts'), ('data', 'data')],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -29,11 +29,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['C:\\Users\\danie\\Documents\\GitHub\\Game-Develpment\\icon.ico'],
+    icon=['icon.png'],
 )
