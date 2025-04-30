@@ -7,7 +7,6 @@ from Scripts.Player import Player
 from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
 from Scripts.Celestials import CloudManager, StarManager
-from Scripts.multiplayer.client2 import listen_for_data
 from Scripts.particle import Particle, Spark
 from Scripts.UI import UI, Button, Dialogue
 from Scripts.grass import *
@@ -69,7 +68,7 @@ class Game:
         self.button_selected = 0
         self.selected_keybind_button = None
         self.key_code = None
-        self.music = True
+        self.music = False
         self.clouds_enabled = True
         self.stars_enabled = True
         self.ADMIN = False
@@ -426,41 +425,41 @@ class Game:
         for _ in range(10):  # send multiple times just in case
             self.sock.sendto(b"punch", (self.peer_ip, self.peer_port))
 
-
     def handle_multiplayer(self):
         if not self.connected:
             self.setup_connection()
             self.connected = True
 
         if self.peer_ip and self.peer_port:
-            print(self.peer_ip, self.peer_port)
-            data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
-            serialized_data = json.dumps(data)
-            self.send_packet(serialized_data)
-            self.actions = []  # clear after sending to avoid resending old actions
+            print(f"[INFO] Connected to peer at {self.peer_ip}:{self.peer_port}")
+            while self.state == "Game":
+                # Prepare and send data
+                data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
+                serialized_data = json.dumps(data)
+                self.send_packet(serialized_data)
+                print(f"[SEND] {serialized_data}")
+                self.actions = []  # Clear sent actions
 
-            try:
-                received_data = self.listen_for_data()
-                if not received_data:
-                    return  # skip this frame if nothing received
+                try:
+                    received_data = self.listen_for_data()
+                    if not received_data:
+                        continue  # No data? Try again next frame
 
-                for item in received_data:
-                    name, pos = item["player"]
-                    if name != self.player_name:
-                        self.players[name] = pos
-                        self.actions = item["actions"]  # update to the latest received actions
-                        # handle actions here (process enemy hits, etc.)
-                    print(f"Player Positions: {self.players}, Actions: {self.actions}")
+                    for item in received_data:
+                        name, pos = item["player"]
+                        if name != self.player_name:
+                            self.players[name] = pos
+                            self.actions = item.get("actions", [])
+                            print(f"[RECV] Player Positions: {self.players}, Actions: {self.actions}")
 
-                for name, pos in self.players.items():
-                    self.display.blit(self.assets["player/idle"].get_frame(), pos)
+                except Exception as e:
+                    print(f"[ERROR] Multiplayer handling failed: {e}")
 
+                # Sync with game loop to avoid spamming
+                time.sleep(1 / self.framerate)
 
-            except Exception as e:
-                print(f"Error in multiplayer handling: {e}")
         else:
-            print("No peer IP and port set. Cannot send data.")
-
+            print("[ERROR] No peer IP and port set. Cannot send data.")
 
     def send_packet(self, data):
         self.sock.sendto(json.dumps(data).encode(), (self.peer_ip, self.peer_port))
@@ -468,12 +467,20 @@ class Game:
     def listen_for_data(self):
         try:
             data, addr = self.sock.recvfrom(4096)
-            return json.loads(data.decode())
+            decoded = data.decode().strip()
+
+            # Skip dummy or invalid messages
+            if not decoded.startswith("{") and not decoded.startswith("["):
+                print(f"[INFO] Ignoring non-JSON packet from {addr}: {decoded}")
+                return []
+            else:
+                print(f"[INFO] Received packet from {addr}: {decoded}")
+
+            return json.loads(decoded)
+
         except Exception as e:
             print(f"Error receiving: {e}")
             return []
-
-
 
     def handle_grass(self):
         # ooga booga do some magic, make grass blow in the wind
