@@ -94,6 +94,9 @@ class Game:
         self.SIGNALING_SERVER_IP = '198.211.117.27'
         self.SIGNALING_SERVER_PORT = 5555
         self.player_name = 'Storm'
+        self.peer_ip = None
+        self.peer_port = None
+        self.connected = False
 
         # Local UDP socket for punching
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -235,6 +238,11 @@ class Game:
             self.star_manager = StarManager(self.assets['stars'], count=8)
 
         logging.info("Max Level:" + str(self.max_level))
+
+        self.multiplayer_thread = threading.Thread(target=self.handle_multiplayer, daemon=True)
+        self.multiplayer_thread.start()
+
+
 
     def load_level(self, map_id, transition=True):
 
@@ -399,8 +407,13 @@ class Game:
         tcp_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         tcp_conn.connect((self.SIGNALING_SERVER_IP, self.SIGNALING_SERVER_PORT))
 
-        # Send our public IP/port (the server will automatically know from TCP connection)
-        # Just wait for opponent info
+        # Get the local UDP port of this client
+        local_udp_port = self.sock.getsockname()[1]
+
+        # Send it to the signaling server
+        tcp_conn.send(str(local_udp_port).encode())
+
+        # Wait for opponent inf
         peer_info = tcp_conn.recv(1024).decode()
         print(f"Got peer info: {peer_info}")
         self.peer_ip, self.peer_port = peer_info.split(":")
@@ -413,8 +426,14 @@ class Game:
         for _ in range(10):  # send multiple times just in case
             self.sock.sendto(b"punch", (self.peer_ip, self.peer_port))
 
+
     def handle_multiplayer(self):
+        if not self.connected:
+            self.setup_connection()
+            self.connected = True
+
         if self.peer_ip and self.peer_port:
+            print(self.peer_ip, self.peer_port)
             data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
             serialized_data = json.dumps(data)
             self.send_packet(serialized_data)
@@ -441,7 +460,7 @@ class Game:
                 print(f"Error in multiplayer handling: {e}")
         else:
             print("No peer IP and port set. Cannot send data.")
-            self.setup_connection()
+
 
     def send_packet(self, data):
         self.sock.sendto(json.dumps(data).encode(), (self.peer_ip, self.peer_port))
@@ -453,6 +472,7 @@ class Game:
         except Exception as e:
             print(f"Error receiving: {e}")
             return []
+
 
 
     def handle_grass(self):
@@ -523,7 +543,7 @@ class Game:
             self.dialogues.append(Dialogue(self, [80, 850, 1760, 200], f"Welcome to Horizon's Embrace. You are now stuck in the Realm of Isoria."
                                                                        f"To move around press {self.key('Move Left')} and {self.key('Move Right')} or {self.key('Move Left', 1)} and {self.key('Move Right', 1)}. To jump press {self.key('Jump')} or {self.key('Jump', 1)}. "
                                                                        f"Your health is displayed in the top left. Currently you have a max of {self.player.max_health} health. You can upgrade this later, but for now lets get you going! "
-                                                                       f"The last thing is to press {self.key('Attack')} or {self.key('Attack', 1)} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on. ",
+                                                                       f"The last thing is to press {self.key('Attack')} to attack or get rid of these annoying pop ups. If you kill all the enemies in the level, you will continue on. ",
                                            text_color=(255, 255, 255), img=self.assets["DialogueBox"]))
 
         while self.state == 'Game':

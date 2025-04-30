@@ -6,13 +6,16 @@ clients = []
 
 def handle_client(conn, addr):
     print(f"New client: {addr}")
-    clients.append((conn, addr))
+    udp_port = int(conn.recv(1024).decode())  # Receive UDP port
+    client_info = (addr[0], udp_port)  # Use IP from TCP + UDP port from client
+    clients.append((conn, client_info))
+
     if len(clients) == 2:
-        # Once 2 clients are connected, share addresses
-        (conn1, addr1), (conn2, addr2) = clients
-        conn1.send(f"{addr2[0]}:{addr2[1]}".encode())
-        conn2.send(f"{addr1[0]}:{addr1[1]}".encode())
+        (_, client1), (_, client2) = clients
+        clients[0][0].send(f"{client2[0]}:{client2[1]}".encode())
+        clients[1][0].send(f"{client1[0]}:{client1[1]}".encode())
         clients.clear()
+
 
 def main():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
