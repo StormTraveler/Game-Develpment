@@ -7,10 +7,14 @@ from Scripts.Player import Player
 from Scripts.Utils import *
 from Scripts.Tilemap import Tilemap
 from Scripts.Celestials import CloudManager, StarManager
+from Scripts.multiplayer.client2 import listen_for_data
 from Scripts.particle import Particle, Spark
 from Scripts.UI import UI, Button, Dialogue
 from Scripts.grass import *
 from Scripts.Menu import *
+import threading
+import json
+import socket
 # Pushed as of the 3/29
 
 
@@ -65,10 +69,10 @@ class Game:
         self.button_selected = 0
         self.selected_keybind_button = None
         self.key_code = None
-        self.music = False
+        self.music = True
         self.clouds_enabled = True
         self.stars_enabled = True
-        self.ADMIN = True
+        self.ADMIN = False
 
         self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Audio", "Video", "Inventory"]
         self.screenshake = 0
@@ -78,6 +82,23 @@ class Game:
         self.framerate = 60
         self.start = time.time()
         self.grass_time = 0
+
+
+        #multiplayer variables
+        self.host = False
+        self.client = False
+        self.server_ip = None
+        self.server_port = None
+        self.players = {}
+        self.actions = {}
+        self.SIGNALING_SERVER_IP = '198.211.117.27'
+        self.SIGNALING_SERVER_PORT = 5555
+        self.player_name = 'Storm'
+
+        # Local UDP socket for punching
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind(('', 0))  # Bind to random available port
+
 
 
         self.gm = GrassManager('data/images/grass/medium_dark', tile_size=16, stiffness=600, max_unique=5, place_range=[1, 1])
@@ -373,6 +394,66 @@ class Game:
                 Spark((x, y), random.random() - 0.5 + (math.pi if flipped else 0),
                       2 + random.random()))
 
+    def setup_connection(self):
+        # Connect to signaling server
+        tcp_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_conn.connect((self.SIGNALING_SERVER_IP, self.SIGNALING_SERVER_PORT))
+
+        # Send our public IP/port (the server will automatically know from TCP connection)
+        # Just wait for opponent info
+        peer_info = tcp_conn.recv(1024).decode()
+        print(f"Got peer info: {peer_info}")
+        self.peer_ip, self.peer_port = peer_info.split(":")
+        self.peer_port = int(self.peer_port)
+
+        tcp_conn.close()
+
+        # NAT punching: send dummy packet to peer
+        print(f"Punching to {self.peer_ip}:{self.peer_port}")
+        for _ in range(10):  # send multiple times just in case
+            self.sock.sendto(b"punch", (self.peer_ip, self.peer_port))
+
+    def handle_multiplayer(self):
+        if self.peer_ip and self.peer_port:
+            data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
+            serialized_data = json.dumps(data)
+            self.send_packet(serialized_data)
+            self.actions = []  # clear after sending to avoid resending old actions
+
+            try:
+                received_data = self.listen_for_data()
+                if not received_data:
+                    return  # skip this frame if nothing received
+
+                for item in received_data:
+                    name, pos = item["player"]
+                    if name != self.player_name:
+                        self.players[name] = pos
+                        self.actions = item["actions"]  # update to the latest received actions
+                        # handle actions here (process enemy hits, etc.)
+                    print(f"Player Positions: {self.players}, Actions: {self.actions}")
+
+                for name, pos in self.players.items():
+                    self.display.blit(self.assets["player/idle"].get_frame(), pos)
+
+
+            except Exception as e:
+                print(f"Error in multiplayer handling: {e}")
+        else:
+            print("No peer IP and port set. Cannot send data.")
+            self.setup_connection()
+
+    def send_packet(self, data):
+        self.sock.sendto(json.dumps(data).encode(), (self.peer_ip, self.peer_port))
+
+    def listen_for_data(self):
+        try:
+            data, addr = self.sock.recvfrom(4096)
+            return json.loads(data.decode())
+        except Exception as e:
+            print(f"Error receiving: {e}")
+            return []
+
 
     def handle_grass(self):
         # ooga booga do some magic, make grass blow in the wind
@@ -494,9 +575,15 @@ class Game:
                 if particle.update():
                     self.particles.remove(particle)
 
-            self.handle_player()
-            self.handle_enemies()
-            self.handle_celestials()
+            player_thread = threading.Thread(target=self.handle_player)
+            enemies_thread = threading.Thread(target=self.handle_enemies)
+            celestials_thread = threading.Thread(target=self.handle_celestials)
+            player_thread.start()
+            enemies_thread.start()
+            celestials_thread.start()
+            # self.handle_player()
+            # self.handle_enemies()
+            # self.handle_celestials()
 
             # Create the outline effect
             display_mask = pygame.mask.from_surface(self.display)

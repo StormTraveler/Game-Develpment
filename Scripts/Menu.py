@@ -64,30 +64,33 @@ def get_buttons(game, state):
                 Button(game, (x, (100 + (100 * iteration)) % buttons_per_screen, 200, 50), "Back", type="back",
                        imgs='MenuButton'))
             return buttons
+    return None
+
 
 def get_sliders(game, state):
     sliders = []
     print(state)
-    match state:
-        case 'Main Menu':
-            print("Menu Loaded")
-            return sliders
+    if state == 'Main Menu':
+        print("Menu Loaded")
+        return sliders
 
-        case 'Pause':
-            return sliders
+    elif state == 'Pause':
+        return sliders
 
-        case 'Options':
-            return sliders
+    elif state == 'Options':
+        return sliders
 
-        case 'Audio':
-            sliders.append(Slider(game, [100, 100, 200, 50], 0, 2, game.master_volume, type="master_volume", text="Master Volume", ))
-            sliders.append(Slider(game, [100, 150, 200, 50], 0, 2, game.music_volume, type="music_volume", text="Music Volume", ))
-            sliders.append(Slider(game, [100, 200, 200, 50], 0, 2, game.sfx_volume, type="sfx_volume", text="SFX Volume", ))
+    elif state == 'Audio':
+        sliders.append(
+            Slider(game, [100, 100, 200, 50], 0, 2, game.master_volume, type="master_volume", text="Master Volume"))
+        sliders.append(
+            Slider(game, [100, 150, 200, 50], 0, 2, game.music_volume, type="music_volume", text="Music Volume"))
+        sliders.append(Slider(game, [100, 200, 200, 50], 0, 2, game.sfx_volume, type="sfx_volume", text="SFX Volume"))
+        return sliders
 
-            return sliders
+    elif state == 'Keybinds':
+        return sliders
 
-        case 'Keybinds':
-            return sliders
-
-        case 'Video':
-            return sliders
+    elif state == 'Video':
+        return sliders
+    return None
