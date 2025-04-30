@@ -6,7 +6,6 @@ import moderngl
 def get_buttons(game, state):
     buttons = []
     sliders = []
-    print(state)
     if state == 'Main Menu':
             buttons.append(Button(game, (100, 100, 200, 50), text="Start", type="start", imgs="MenuButton"))
             buttons.append(Button(game, (100, 200, 200, 50), text="Options", type="options", imgs="MenuButton"))
@@ -69,7 +68,6 @@ def get_buttons(game, state):
 
 def get_sliders(game, state):
     sliders = []
-    print(state)
     if state == 'Main Menu':
         print("Menu Loaded")
         return sliders

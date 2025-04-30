@@ -5,6 +5,15 @@ auto-py-to-exe
 
 
 TODO:
+Fix the keys being weird
+
+
+Multiplayer:
+add player frame to packet so that it has animation and is not still
+move players up so not in the ground
+
+
+
 Fix Render order {The player outline is rendering under the terrain}
 Create a known bug list
 try to fix the dialogue lag - Done?

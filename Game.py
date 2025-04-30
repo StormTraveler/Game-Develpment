@@ -409,8 +409,12 @@ class Game:
     def setup_connection(self):
         # Connect to signaling server
         tcp_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcp_conn.connect((self.SIGNALING_SERVER_IP, self.SIGNALING_SERVER_PORT))
-
+        try:
+            tcp_conn.connect((self.SIGNALING_SERVER_IP, self.SIGNALING_SERVER_PORT))
+        except Exception as e:
+            logging.critical(f"[ERROR] Failed to connect to signaling server: {e}")
+            print("[WARNING] Failed to connect to signaling server. Please check your internet connection and server.")
+            return
         # Get the local UDP port of this client
         local_udp_port = self.sock.getsockname()[1]
 
@@ -442,7 +446,7 @@ class Game:
                 data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
                 serialized_data = json.dumps(data)
                 self.send_packet(serialized_data)
-                print(f"[SEND] {serialized_data}")
+                logging.debug(f"[SEND] {serialized_data}")
                 self.actions = []  # Clear sent actions
 
                 try:
@@ -454,7 +458,7 @@ class Game:
 
 
                     # Handle received data
-                    print(f"received data: {received_data}")
+                    logging.debug(f"received data: {received_data}")
                     try:
                         # Ensure received_data is deserialized properly
                         if isinstance(received_data, str):
@@ -464,22 +468,22 @@ class Game:
                         if isinstance(received_data, list) and "player" in received_data[0]:
                             name = received_data[0]["player"][0]
                             pos = received_data[0]["player"][1]
-                            print(f"[RECV] Player: {name}, Position: {pos}")
+                            logging.info(f"[RECV] Player: {name}, Position: {pos}")
                             self.players[name] = pos
                         else:
-                            print(f"[ERROR] Invalid data structure: {received_data}")
+                            logging.critical(f"[ERROR] Invalid data structure: {received_data}")
 
                     except Exception as e:
-                        print(f"[ERROR] Failed to unpack received data: {e}")
+                        logging.critical(f"[ERROR] Failed to unpack received data: {e}")
 
                 except Exception as e:
-                    print(f"[ERROR] Multiplayer handling failed: {e}")
+                    logging.critical(f"[ERROR] Multiplayer handling failed: {e}")
 
                 # Sync with game loop to avoid spamming
-                time.sleep(1 / self.framerate)
+                time.sleep(1 / 30) # Limit packets to 30 FPS
 
         else:
-            print("[ERROR] No peer IP and port set. Cannot send data.")
+            logging.critical("[ERROR] No peer IP and port set. Cannot send data.")
 
     def send_packet(self, data):
         self.sock.sendto(json.dumps(data).encode(), (self.peer_ip, self.peer_port))
@@ -492,17 +496,17 @@ class Game:
             # Attempt to parse the received data into a JSON object
             decoded_json = json.loads(decoded)
 
-            print(f"[INFO] Received packet from {addr}: {decoded_json}")
+            logging.info(f"[INFO] Received packet from {addr}: {decoded_json}")
 
             return decoded_json
 
         except json.JSONDecodeError:
             # Handle the case where the received data is not valid JSON
-            print(f"[INFO] Ignoring non-JSON packet from {addr}: {decoded}")
+            logging.info(f"[INFO] Ignoring non-JSON packet from {addr}: {decoded}")
             return []
 
         except Exception as e:
-            print(f"Error receiving: {e}")
+            logging.critical(f"Error receiving: {e}")
             return []
 
     def handle_grass(self):
@@ -628,9 +632,12 @@ class Game:
             player_thread = threading.Thread(target=self.handle_player)
             enemies_thread = threading.Thread(target=self.handle_enemies)
             celestials_thread = threading.Thread(target=self.handle_celestials)
+            events_thread = threading.Thread(target=self.events)
             player_thread.start()
             enemies_thread.start()
             celestials_thread.start()
+            events_thread.start()
+
             # self.handle_player()
             # self.handle_enemies()
             # self.handle_celestials()
@@ -663,7 +670,6 @@ class Game:
             self.dt = current_time - last_frame_time
             last_frame_time = current_time
 
-            self.events()
             self.handle_UI()
             self.handle_dialogues()
             self.render_screen()
@@ -728,10 +734,10 @@ class Game:
                         self.player.jump(strength=1.2)
 
                     self.handle_player()
+                    self.events()
                     #   Handle Basic Clockrate and Displays
                     self.clock.tick(self.framerate)
                     self.outline.blit(self.display, (0, 0))
-                    self.events()
 
                     for button in self.buttons:
                         button.render(self.full_display)
@@ -753,11 +759,16 @@ class Game:
                     self.screen_size[0] / self.screen_size[1]))
 
             if self.state == "Game":
+                keys = pygame.key.get_pressed()
+                if any(keys[k] for k in self.keybinds["Move Left"]):
+                    self.movement[0] = True
+                elif any(keys[k] for k in self.keybinds["Move Right"]):
+                    self.movement[1] = True
+                else:
+                    self.movement[0] = False
+                    self.movement[1] = False
+
                 if event.type == pygame.KEYDOWN:
-                    if event.key in self.keybinds["Move Left"]:
-                        self.movement[0] = True
-                    if event.key in self.keybinds["Move Right"]:
-                        self.movement[1] = True
                     if event.key in self.keybinds["Jump"]:
                         if self.player.jump():
                             self.sfx['jump'].play()
