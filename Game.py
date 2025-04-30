@@ -76,8 +76,8 @@ class Game:
         self.menu_states = ["Main Menu", "Pause", "Options", "Keybinds", "Audio", "Video", "Inventory"]
         self.screenshake = 0
         self.master_volume = 1.0
-        self.sfx_volume = 1.0
-        self.music_volume = 1
+        self.sfx_volume = 0.3
+        self.music_volume = 0.3
         self.framerate = 60
         self.start = time.time()
         self.grass_time = 0
@@ -333,7 +333,12 @@ class Game:
                                speed=self.player.speed * self.dt + 120 // self.framerate)
             self.player.render(self.display, offset=self.render_scroll)
 
-
+            for name, pos in self.players.items(): # render multiplayer
+                if name != self.player_name:  # Avoid rendering the current player twice
+                    self.display.blit(
+                                            self.assets["player/idle"].img(),
+                                            (int(pos[0] - self.scroll[0]), int(pos[1] - self.scroll[1]))
+                                        )
     def handle_enemies(self):
         for enemy in self.enemies:
             enemy.update(self.tilemap, (0, 0), offset=self.render_scroll)
@@ -432,7 +437,7 @@ class Game:
 
         if self.peer_ip and self.peer_port:
             print(f"[INFO] Connected to peer at {self.peer_ip}:{self.peer_port}")
-            while self.state == "Game":
+            while self.state != "Quit":
                 # Prepare and send data
                 data = [{"player": [self.player_name, self.player.pos], "actions": self.actions}]
                 serialized_data = json.dumps(data)
@@ -445,12 +450,27 @@ class Game:
                     if not received_data:
                         continue  # No data? Try again next frame
 
-                    for item in received_data:
-                        name, pos = item["player"]
-                        if name != self.player_name:
+                    test_packet = [{"player": ["Andranik", [-91.5835176538054, 241]], "actions": []}]
+
+
+                    # Handle received data
+                    print(f"received data: {received_data}")
+                    try:
+                        # Ensure received_data is deserialized properly
+                        if isinstance(received_data, str):
+                            received_data = json.loads(received_data)
+
+                        # Access the data safely
+                        if isinstance(received_data, list) and "player" in received_data[0]:
+                            name = received_data[0]["player"][0]
+                            pos = received_data[0]["player"][1]
+                            print(f"[RECV] Player: {name}, Position: {pos}")
                             self.players[name] = pos
-                            self.actions = item.get("actions", [])
-                            print(f"[RECV] Player Positions: {self.players}, Actions: {self.actions}")
+                        else:
+                            print(f"[ERROR] Invalid data structure: {received_data}")
+
+                    except Exception as e:
+                        print(f"[ERROR] Failed to unpack received data: {e}")
 
                 except Exception as e:
                     print(f"[ERROR] Multiplayer handling failed: {e}")
@@ -469,14 +489,17 @@ class Game:
             data, addr = self.sock.recvfrom(4096)
             decoded = data.decode().strip()
 
-            # Skip dummy or invalid messages
-            if not decoded.startswith("{") and not decoded.startswith("["):
-                print(f"[INFO] Ignoring non-JSON packet from {addr}: {decoded}")
-                return []
-            else:
-                print(f"[INFO] Received packet from {addr}: {decoded}")
+            # Attempt to parse the received data into a JSON object
+            decoded_json = json.loads(decoded)
 
-            return json.loads(decoded)
+            print(f"[INFO] Received packet from {addr}: {decoded_json}")
+
+            return decoded_json
+
+        except json.JSONDecodeError:
+            # Handle the case where the received data is not valid JSON
+            print(f"[INFO] Ignoring non-JSON packet from {addr}: {decoded}")
+            return []
 
         except Exception as e:
             print(f"Error receiving: {e}")
@@ -856,6 +879,11 @@ class Game:
                         if self.state == "Quit":
                             pygame.quit()
                             sys.exit()
+                        return None
+                    return None
+                return None
+            return None
+        return None
 
 
 if __name__ == "__main__":

@@ -3,6 +3,9 @@ import socket
 import threading
 import json
 
+x =  [{"player": ["Andranik", [-91.5835176538054, 241]], "actions": []}]
+
+
 SIGNALING_SERVER_IP = '0.0.0.0'
 SIGNALING_SERVER_PORT = 5555
 
