@@ -1,8 +1,8 @@
 py -m PyInstaller Game.py --noconsole
 auto-py-to-exe
 
-
-
+Pre-Render Static Elements - render ui and menu to pre set surface
+Add Mutliprocessing instead of threading
 
 TODO:
 Fix the keys being weird

@@ -5,7 +5,7 @@ a = Analysis(
     ['Game.py'],
     pathex=[],
     binaries=[],
-    datas=[('Scripts', 'Scripts'), ('data', 'data')],
+    datas=[('data', 'data'), ('Scripts', 'Scripts')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
