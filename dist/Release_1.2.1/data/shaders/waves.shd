@@ -1,0 +1,31 @@
+#version 330 core
+
+uniform sampler2D tex;
+uniform float time;
+
+in vec2 uvs;
+out vec4 f_color;
+
+void main() {
+    // Sample the texture color
+    vec4 texColor = texture(tex, uvs);
+
+    // Define the target color (normalized to 0-1 range)
+    vec3 targetColor = vec3(0.0, 166.0 / 255.0, 255.0 / 255.0);
+
+    // Set a small threshold for color matching (due to precision errors)
+    float threshold = 0.02;
+
+    // Check if the sampled color is close to the target color
+    if (distance(texColor.rgb, targetColor) < threshold) {
+        // Apply wave effect only to this color
+        float wave = sin(uvs.x * 10.0 + time) * 0.05;
+        float wave2 = sin(uvs.y * 15.0 + time * 1.5) * 0.03;
+
+        vec2 distorted_uv = vec2(uvs.x + wave, uvs.y + wave2);
+        f_color = texture(tex, distorted_uv); // Apply effect
+    } else {
+        // Keep other pixels unchanged
+        f_color = texColor;
+    }
+}
