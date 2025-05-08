@@ -1,4 +1,9 @@
 py -m PyInstaller Game.py --noconsole
+
+pyinstaller --onefile --windowed --icon=icon.png --add-data "data:data" --add-data "Scripts:Scripts" Game.py
+LINUX ^^^
+
+
 auto-py-to-exe
 
 Pre-Render Static Elements - render ui and menu to pre set surface
